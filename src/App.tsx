@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import MainLayout from "@/components/layout/MainLayout";
 
 // Pages
+import LandingPage from "./pages/LandingPage";
 import HomePage from "./pages/HomePage";
 import ArticlePage from "./pages/ArticlePage";
 import QuizPage from "./pages/QuizPage";
@@ -23,7 +24,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 // Temporary auth check for demo purposes
-const isAuthenticated = true;
+const isAuthenticated = false;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -33,17 +34,20 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Auth routes */}
+            {/* Public routes */}
+            <Route path="/" element={
+              isAuthenticated ? <Navigate to="/home" /> : <LandingPage />
+            } />
             <Route path="/login" element={
-              isAuthenticated ? <Navigate to="/" /> : <Login />
+              isAuthenticated ? <Navigate to="/home" /> : <Login />
             } />
             <Route path="/signup" element={
-              isAuthenticated ? <Navigate to="/" /> : <Signup />
+              isAuthenticated ? <Navigate to="/home" /> : <Signup />
             } />
             <Route path="/onboarding" element={<Onboarding />} />
 
             {/* Main app routes with layout */}
-            <Route path="/" element={
+            <Route path="/home" element={
               <MainLayout><HomePage /></MainLayout>
             } />
             <Route path="/article/:id" element={
