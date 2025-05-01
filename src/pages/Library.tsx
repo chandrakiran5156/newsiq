@@ -48,8 +48,8 @@ export default function Library() {
                     </div>
                     <div className="flex-1 p-4">
                       <div className="flex justify-between items-start">
-                        <span className={`difficulty-badge difficulty-badge-${article.difficulty}`}>
-                          {article.difficulty}
+                        <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
+                          {article.difficultyLevel}
                         </span>
                         <Button variant="ghost" size="icon">
                           <Bookmark className="h-4 w-4 fill-current" />
@@ -61,7 +61,7 @@ export default function Library() {
                       </p>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground flex items-center">
-                          <Clock size={12} className="mr-1" /> {article.readingTime} min read
+                          <Clock size={12} className="mr-1" /> {article.readTime} min read
                         </span>
                         <Button asChild size="sm">
                           <Link to={`/article/${article.id}`}>Continue Reading</Link>
@@ -100,14 +100,14 @@ export default function Library() {
                         </CardDescription>
                       </div>
                       <span className="text-xs text-muted-foreground flex items-center">
-                        <Clock size={12} className="mr-1" /> {article.readingTime} min
+                        <Clock size={12} className="mr-1" /> {article.readTime} min
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 pb-3 px-4">
                     <div className="flex justify-between items-center">
-                      <span className={`difficulty-badge difficulty-badge-${article.difficulty}`}>
-                        {article.difficulty}
+                      <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
+                        {article.difficultyLevel}
                       </span>
                       <Button asChild size="sm" variant="outline">
                         <Link to={`/article/${article.id}`}>Read Again</Link>

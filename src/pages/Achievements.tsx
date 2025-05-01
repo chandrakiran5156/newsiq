@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Award, Medal, Star, Clock, BookOpen, Target, Lightning, TrendingUp } from 'lucide-react';
+import { Trophy, Award, Medal, Star, Clock, BookOpen, Target, Zap, TrendingUp } from 'lucide-react';
 
 export default function Achievements() {
   const [activeTab, setActiveTab] = useState('leaderboard');
@@ -27,7 +27,7 @@ export default function Achievements() {
       description: "Read articles for 7 consecutive days", 
       progress: 5, 
       total: 7, 
-      icon: Lightning,
+      icon: Zap,
       earned: false 
     },
     { 

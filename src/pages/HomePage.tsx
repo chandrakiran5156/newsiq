@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ArticleCard from '@/components/articles/ArticleCard';
@@ -118,11 +117,11 @@ export default function HomePage() {
                     </div>
                     <CardHeader className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <span className={`difficulty-badge difficulty-badge-${article.difficulty}`}>
-                          {article.difficulty}
+                        <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
+                          {article.difficultyLevel}
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock size={12} /> {article.readingTime} min
+                          <Clock size={12} /> {article.readTime} min
                         </span>
                       </div>
                       <CardTitle className="text-base line-clamp-2">{article.title}</CardTitle>
