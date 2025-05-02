@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Article, UserArticleInteraction, Quiz, Category, DifficultyLevel } from '@/types';
 import { 
@@ -10,7 +9,7 @@ import {
 
 // Article API
 export async function fetchArticles({
-  limit = 10,
+  limit = 100, // Increased default limit to 100
   offset = 0,
   category = null,
   difficultyLevel = null,
@@ -62,7 +61,7 @@ export async function fetchArticles({
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`);
+      query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%,tags.cs.{${search}}`);
     }
 
     const { data, error } = await query;
@@ -126,7 +125,7 @@ export async function fetchTrendingArticles(limit = 5) {
   }
 }
 
-export async function fetchArticlesByUserPreference(userId: string, limit = 10) {
+export async function fetchArticlesByUserPreference(userId: string, limit = 100) {
   try {
     console.log('Fetching articles by user preference for user:', userId);
     

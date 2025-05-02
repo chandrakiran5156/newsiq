@@ -23,13 +23,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { toast } from "sonner";
 
 // Define categories with their icons
 const categories: { id: Category; name: string; icon: string }[] = [
   { id: 'technology', name: 'Technology', icon: '💻' },
   { id: 'science', name: 'Science', icon: '🔬' },
   { id: 'politics', name: 'Politics', icon: '🏛️' },
-  { id: 'business', name: 'Business', icon: '📊' },
+  { id: 'business', name: 'Business', icon: '💼' },
   { id: 'finance', name: 'Finance', icon: '💰' },
   { id: 'health', name: 'Health', icon: '🏥' },
   { id: 'sports', name: 'Sports', icon: '⚽' },
@@ -49,7 +50,7 @@ export default function Discover() {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 100; // Increased from 12 to 100 to show more articles at once
   
   // Get category from URL if present
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function Discover() {
   }, [debouncedSearchTerm, selectedCategory, selectedDifficulty, sortBy]);
   
   // Fetch all articles with search filter and pagination
-  const { data: allArticles = [], isLoading: isAllLoading, isFetching: isAllFetching } = useQuery({
+  const { data: allArticles = [], isLoading: isAllLoading, isFetching: isAllFetching, error: allArticlesError } = useQuery({
     queryKey: ['articles', 'all', debouncedSearchTerm, page, sortBy, selectedCategory, selectedDifficulty],
     queryFn: () => fetchArticles({ 
       search: debouncedSearchTerm, 
@@ -84,21 +85,27 @@ export default function Discover() {
       offset: (page - 1) * ITEMS_PER_PAGE,
       sortBy,
     }),
+    staleTime: 0, // Don't use cache
+    refetchOnMount: true, // Always refetch on mount
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch articles:', error);
+        toast.error("Failed to fetch articles. Please try again later.");
       }
     }
   });
   
   // Fetch personalized articles
-  const { data: recommendedArticles = [], isLoading: isRecommendedLoading } = useQuery({
+  const { data: recommendedArticles = [], isLoading: isRecommendedLoading, error: recommendedArticlesError } = useQuery({
     queryKey: ['articles', 'recommended', user?.id],
-    queryFn: () => user ? fetchArticlesByUserPreference(user.id, 12) : Promise.resolve([]),
+    queryFn: () => user ? fetchArticlesByUserPreference(user.id, ITEMS_PER_PAGE) : Promise.resolve([]),
     enabled: !!user,
+    staleTime: 0, // Don't use cache
+    refetchOnMount: true, // Always refetch on mount
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch recommended articles:', error);
+        toast.error("Failed to fetch recommended articles. Please try again later.");
       }
     }
   });
@@ -118,6 +125,7 @@ export default function Discover() {
   // Get loading state based on selected tab
   const isLoading = selectedTab === 'recommended' ? isRecommendedLoading : isAllLoading;
   const isFetching = selectedTab === 'all' && isAllFetching;
+  const error = selectedTab === 'recommended' ? recommendedArticlesError : allArticlesError;
 
   // Handle sort change
   const handleSortChange = (value: string) => {
@@ -148,6 +156,14 @@ export default function Discover() {
     setSortBy('newest');
     setSearchParams({});
   };
+
+  // Log for debugging
+  useEffect(() => {
+    console.log('All articles count:', allArticles?.length);
+    if (allArticles?.length > 0) {
+      console.log('Sample article:', allArticles[0]);
+    }
+  }, [allArticles]);
 
   return (
     <div className="space-y-6">
@@ -282,6 +298,13 @@ export default function Discover() {
                     </Card>
                   ))}
                 </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium text-red-500">Error loading articles</h3>
+                  <p className="text-muted-foreground mt-2">
+                    There was a problem fetching the articles. Please try again later.
+                  </p>
+                </div>
               ) : displayArticles.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -290,8 +313,12 @@ export default function Discover() {
                     ))}
                   </div>
                   
+                  <div className="text-center mt-4 text-sm text-muted-foreground">
+                    Showing {displayArticles.length} articles
+                  </div>
+                  
                   {/* Only show pagination for 'all' tab */}
-                  {selectedTab === 'all' && (
+                  {selectedTab === 'all' && displayArticles.length >= ITEMS_PER_PAGE && (
                     <div className="flex justify-center mt-8">
                       <Button
                         variant="outline"

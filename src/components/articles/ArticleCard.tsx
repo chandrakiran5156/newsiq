@@ -3,14 +3,28 @@ import { Article } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { BookmarkPlus, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { categories } from '@/data/mockData';
 
 interface ArticleCardProps {
   article: Article;
 }
 
 export default function ArticleCard({ article }: ArticleCardProps) {
-  const categoryData = categories.find(cat => cat.id === article.category);
+  // Get category icon based on category name
+  const getCategoryIcon = (category: string) => {
+    const categoryIcons: Record<string, string> = {
+      'technology': '💻',
+      'science': '🔬',
+      'politics': '🏛️',
+      'business': '💼',
+      'finance': '💰',
+      'health': '🏥',
+      'sports': '⚽',
+      'entertainment': '🎬',
+      'education': '📚'
+    };
+    
+    return categoryIcons[category] || '📄';
+  };
   
   return (
     <div className="article-card animate-fade-in">
@@ -23,7 +37,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
           />
           <div className="absolute top-2 left-2 flex gap-2">
             <span className="difficulty-badge difficulty-badge-beginner bg-black/50 text-white">
-              {categoryData?.icon} {categoryData?.name}
+              {getCategoryIcon(article.category)} {article.category}
             </span>
           </div>
           <div className="absolute top-2 right-2">
