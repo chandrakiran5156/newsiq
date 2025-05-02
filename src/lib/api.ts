@@ -1,6 +1,11 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Article, UserArticleInteraction, Quiz, Category, DifficultyLevel } from '@/types';
+import { 
+  mapDbArticleToArticle, 
+  mapDbQuizToQuiz, 
+  mapDbInteractionToInteraction, 
+  mapArray 
+} from './mappers';
 
 // Article API
 export async function fetchArticles({
@@ -42,7 +47,7 @@ export async function fetchArticles({
     throw new Error(error.message);
   }
 
-  return data as Article[];
+  return mapArray(data || [], mapDbArticleToArticle);
 }
 
 export async function fetchArticleById(id: string) {
@@ -57,7 +62,7 @@ export async function fetchArticleById(id: string) {
     throw new Error(error.message);
   }
 
-  return data as Article;
+  return mapDbArticleToArticle(data);
 }
 
 export async function fetchTrendingArticles(limit = 5) {
@@ -72,7 +77,7 @@ export async function fetchTrendingArticles(limit = 5) {
     throw new Error(error.message);
   }
 
-  return data as Article[];
+  return mapArray(data || [], mapDbArticleToArticle);
 }
 
 export async function fetchArticlesByUserPreference(userId: string, limit = 10) {
@@ -103,7 +108,7 @@ export async function fetchArticlesByUserPreference(userId: string, limit = 10) 
     throw new Error(error.message);
   }
 
-  return data as Article[];
+  return mapArray(data || [], mapDbArticleToArticle);
 }
 
 // Article interactions API
@@ -182,7 +187,7 @@ export async function getUserArticleInteraction(userId: string, articleId: strin
     throw new Error(error.message);
   }
 
-  return data as UserArticleInteraction | null;
+  return data ? mapDbInteractionToInteraction(data) : null;
 }
 
 export async function getSavedArticles(userId: string) {
@@ -198,7 +203,7 @@ export async function getSavedArticles(userId: string) {
   }
 
   // Restructure the data to get the articles
-  return data.map(item => item.articles) as Article[];
+  return mapArray(data.map(item => item.articles), mapDbArticleToArticle);
 }
 
 export async function getReadArticles(userId: string) {
@@ -215,7 +220,7 @@ export async function getReadArticles(userId: string) {
   }
 
   // Restructure the data to get the articles
-  return data.map(item => item.articles) as Article[];
+  return mapArray(data.map(item => item.articles), mapDbArticleToArticle);
 }
 
 // Quiz API
@@ -231,7 +236,7 @@ export async function fetchQuizByArticleId(articleId: string) {
     throw new Error(error.message);
   }
 
-  return data as Quiz;
+  return mapDbQuizToQuiz(data);
 }
 
 export async function submitQuizAttempt(

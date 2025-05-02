@@ -1,4 +1,3 @@
-
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -16,14 +15,21 @@ export default function ArticlePage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [fallbackArticle, setFallbackArticle] = useState<Article | null>(null);
 
   // Fetch article data
   const { data: article, isLoading: isArticleLoading } = useQuery({
     queryKey: ['article', id],
     queryFn: () => id ? fetchArticleById(id) : Promise.reject('No article ID'),
-    onError: () => {
-      console.error('Failed to fetch article, using mock data');
-      // You could set a fallback article from mockArticles here
+    enabled: !!id,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch article, using mock data', error);
+        if (id && mockArticles) {
+          const mockArticle = mockArticles.find(a => a.id === id);
+          if (mockArticle) setFallbackArticle(mockArticle);
+        }
+      }
     }
   });
 
@@ -32,8 +38,10 @@ export default function ArticlePage() {
     queryKey: ['articleInteraction', user?.id, id],
     queryFn: () => user && id ? getUserArticleInteraction(user.id, id) : Promise.resolve(null),
     enabled: !!user && !!id,
-    onError: () => {
-      console.error('Failed to fetch article interaction');
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch article interaction', error);
+      }
     }
   });
 
@@ -135,9 +143,9 @@ export default function ArticlePage() {
   };
 
   // Fallback to mock article if API fails
-  const displayArticle = article || (id ? mockArticles.find(a => a.id === id) : null);
+  const displayArticle = article || fallbackArticle || (id && mockArticles ? mockArticles.find(a => a.id === id) : null);
   const categoryData = displayArticle ? categories.find(cat => cat.id === displayArticle.category) : null;
-  const isSaved = interaction?.is_saved || false;
+  const isSaved = interaction?.isSaved || false;
 
   if (isArticleLoading) {
     return (

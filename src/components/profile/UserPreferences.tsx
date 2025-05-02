@@ -67,8 +67,16 @@ export default function UserPreferences() {
   
   // Update form when preferences are loaded
   if (preferences && selectedCategories.length === 0) {
-    setSelectedCategories(preferences.categories || []);
-    setSelectedDifficulty(preferences.difficulty_level || "intermediate");
+    const cats = preferences.categories || [];
+    // Cast to ensure type safety
+    setSelectedCategories(cats.filter((cat): cat is Category => 
+      categories.some(c => c.value === cat)
+    ));
+    
+    const diff = preferences.difficulty_level || "intermediate";
+    if (difficultyLevels.some(d => d.value === diff)) {
+      setSelectedDifficulty(diff as DifficultyLevel);
+    }
   }
   
   const handleSavePreferences = () => {

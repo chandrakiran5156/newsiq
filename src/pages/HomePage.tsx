@@ -1,5 +1,4 @@
-
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import ArticleCard from '@/components/articles/ArticleCard';
@@ -29,8 +28,10 @@ export default function HomePage() {
   const { data: trendingArticles, isLoading: isTrendingLoading } = useQuery({
     queryKey: ['trendingArticles'],
     queryFn: () => fetchTrendingArticles(3),
-    onError: () => {
-      console.error('Failed to fetch trending articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch trending articles, using mock data');
+      }
     }
   });
 
@@ -39,8 +40,10 @@ export default function HomePage() {
     queryKey: ['personalizedArticles', user?.id],
     queryFn: () => user ? fetchArticlesByUserPreference(user.id) : Promise.resolve([]),
     enabled: !!user,
-    onError: () => {
-      console.error('Failed to fetch personalized articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch personalized articles, using mock data');
+      }
     }
   });
 
@@ -48,8 +51,10 @@ export default function HomePage() {
   const { data: filteredArticles, isLoading: isFilteredLoading } = useQuery({
     queryKey: ['articles', selectedCategory],
     queryFn: () => fetchArticles({ category: selectedCategory }),
-    onError: () => {
-      console.error('Failed to fetch filtered articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch filtered articles, using mock data');
+      }
     }
   });
 
@@ -57,8 +62,10 @@ export default function HomePage() {
   const { data: leaderboard, isLoading: isLeaderboardLoading } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => fetchLeaderboard(3),
-    onError: () => {
-      console.error('Failed to fetch leaderboard, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch leaderboard, using mock data');
+      }
     }
   });
 

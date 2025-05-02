@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
@@ -31,7 +30,7 @@ export default function Discover() {
   const [selectedTab, setSelectedTab] = useState('all');
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-
+  
   // Get category from URL if present
   useEffect(() => {
     const categoryFromURL = searchParams.get('category') as Category | null;
@@ -54,8 +53,10 @@ export default function Discover() {
   const { data: allArticles, isLoading: isAllLoading } = useQuery({
     queryKey: ['articles', 'all', debouncedSearchTerm],
     queryFn: () => fetchArticles({ search: debouncedSearchTerm }),
-    onError: () => {
-      console.error('Failed to fetch articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch articles, using mock data');
+      }
     }
   });
   
@@ -63,8 +64,10 @@ export default function Discover() {
   const { data: trendingArticles, isLoading: isTrendingLoading } = useQuery({
     queryKey: ['articles', 'trending'],
     queryFn: () => fetchTrendingArticles(12),
-    onError: () => {
-      console.error('Failed to fetch trending articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch trending articles, using mock data');
+      }
     }
   });
   
@@ -73,8 +76,10 @@ export default function Discover() {
     queryKey: ['articles', 'recommended', user?.id],
     queryFn: () => user ? fetchArticlesByUserPreference(user.id, 12) : Promise.resolve([]),
     enabled: !!user,
-    onError: () => {
-      console.error('Failed to fetch recommended articles, using mock data');
+    meta: {
+      onError: () => {
+        console.error('Failed to fetch recommended articles, using mock data');
+      }
     }
   });
 
