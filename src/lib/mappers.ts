@@ -56,16 +56,38 @@ export function mapDbAchievementToAchievement(dbAchievement: any): Achievement {
 
 // Map database user achievement to frontend UserAchievement type
 export function mapDbUserAchievementToUserAchievement(dbUserAchievement: any): UserAchievement {
-  return {
+  const result: UserAchievement = {
     id: dbUserAchievement.id,
     userId: dbUserAchievement.user_id,
     achievementId: dbUserAchievement.achievement_id,
     earnedAt: dbUserAchievement.earned_at,
-    achievement: dbUserAchievement.achievements ? mapDbAchievementToAchievement(dbUserAchievement.achievements) : undefined,
   };
+  
+  // Only add the achievement property if it exists in the database response
+  if (dbUserAchievement.achievements) {
+    result.achievement = mapDbAchievementToAchievement(dbUserAchievement.achievements);
+  }
+  
+  return result;
 }
 
 // Helper to map array of items
 export function mapArray<T, U>(items: T[], mapperFn: (item: T) => U): U[] {
   return items.map(mapperFn);
+}
+
+// Map profile data
+export function mapDbProfileToUserProfile(profile: any) {
+  return {
+    id: profile.id,
+    username: profile.username,
+    full_name: profile.full_name,
+    avatar_url: profile.avatar_url,
+    email: profile.email,
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
+    quizzes_taken: profile.quizzes_taken || 0,
+    avg_quiz_score: profile.avg_quiz_score || 0,
+    current_streak: profile.current_streak || 0
+  };
 }

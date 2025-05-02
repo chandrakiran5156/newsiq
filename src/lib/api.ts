@@ -278,18 +278,31 @@ export async function submitQuizAttempt(
 
 // User data API
 export async function fetchUserProfile(userId: string) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
+  try {
+    // First try to get the user from the leaderboard view which has the stats
+    const { data: leaderboardData, error: leaderboardError } = await supabase
+      .from('leaderboard_view')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+      
+    if (leaderboardData) {
+      return leaderboardData;
+    }
+    
+    // Fallback to profile table if no leaderboard data
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+      
+    if (profileError) throw profileError;
+    return profileData;
+  } catch (error) {
     console.error('Error fetching user profile:', error);
-    throw new Error(error.message);
+    throw error;
   }
-
-  return data;
 }
 
 export async function updateUserProfile(userId: string, updates: Partial<any>) {

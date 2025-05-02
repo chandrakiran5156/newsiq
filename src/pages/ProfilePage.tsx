@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,16 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Award, BookOpen, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/supabase-auth';
 import { fetchUserProfile, fetchUserAchievements, getReadArticles, getSavedArticles } from '@/lib/api';
-import { mapArray, mapDbUserAchievementToUserAchievement } from '@/lib/mappers';
+import { mapArray, mapDbUserAchievementToUserAchievement, mapDbProfileToUserProfile } from '@/lib/mappers';
 import ArticleList from '@/components/articles/ArticleList';
 import UserPreferences from '@/components/profile/UserPreferences';
+import { UserProfile } from '@/types';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch user profile
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
+  const { data: profileData, isLoading: isProfileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
     queryFn: () => user ? fetchUserProfile(user.id) : Promise.reject('No user'),
     enabled: !!user,
@@ -26,6 +26,9 @@ export default function ProfilePage() {
       }
     }
   });
+
+  // Parse profile data
+  const profile: UserProfile = profileData ? mapDbProfileToUserProfile(profileData) : {} as UserProfile;
 
   // Fetch user achievements
   const { data: achievements, isLoading: isAchievementsLoading } = useQuery({
@@ -65,7 +68,7 @@ export default function ProfilePage() {
 
   const mappedAchievements = achievements ? mapArray(achievements, mapDbUserAchievementToUserAchievement) : [];
 
-  // Get stats from the leaderboard view
+  // Get stats from the profile
   const quizzesTaken = profile?.quizzes_taken || 0;
   const avgQuizScore = profile?.avg_quiz_score || 0;
   const currentStreak = profile?.current_streak || 0;
@@ -136,8 +139,8 @@ export default function ProfilePage() {
                         <Award className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-medium">{item.achievement?.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.achievement?.description}</p>
+                        <p className="font-medium">{item.achievement?.name || 'Achievement'}</p>
+                        <p className="text-xs text-muted-foreground">{item.achievement?.description || 'Complete this achievement to learn more'}</p>
                       </div>
                     </div>
                   ))}
@@ -287,8 +290,8 @@ export default function ProfilePage() {
                             <Award className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="font-medium">{item.achievement?.name}</p>
-                            <p className="text-sm text-muted-foreground">{item.achievement?.description}</p>
+                            <p className="font-medium">{item.achievement?.name || 'Achievement'}</p>
+                            <p className="text-sm text-muted-foreground">{item.achievement?.description || 'Complete this achievement to learn more'}</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Earned {new Date(item.earnedAt).toLocaleDateString()}
                             </p>

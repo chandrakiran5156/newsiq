@@ -1,3 +1,4 @@
+
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -96,4 +97,19 @@ export interface UserAchievement {
   userId: string;
   achievementId: string;
   earnedAt: string;
+  achievement?: Achievement; // Add this property to connect to the Achievement
+}
+
+// Add a profile interface that includes the leaderboard stats
+export interface UserProfile {
+  id: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
+  email?: string;
+  created_at?: string;
+  updated_at?: string;
+  quizzes_taken?: number;
+  avg_quiz_score?: number;
+  current_streak?: number;
 }
