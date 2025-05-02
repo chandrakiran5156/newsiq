@@ -19,6 +19,7 @@ import Onboarding from "./pages/Onboarding";
 import Discover from "./pages/Discover";
 import Library from "./pages/Library";
 import Achievements from "./pages/Achievements";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import Features from "./pages/Features";
 import Contact from "./pages/Contact";
@@ -95,6 +96,11 @@ const AppRoutes = () => {
       <Route path="/achievements" element={
         <ProtectedRoute>
           <MainLayout><Achievements /></MainLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/leaderboard" element={
+        <ProtectedRoute>
+          <MainLayout><Leaderboard /></MainLayout>
         </ProtectedRoute>
       } />
       <Route path="/profile" element={
