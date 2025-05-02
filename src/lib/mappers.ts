@@ -1,5 +1,5 @@
 
-import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction } from "@/types";
+import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
 // Map database article to frontend Article type
@@ -38,6 +38,30 @@ export function mapDbInteractionToInteraction(dbInteraction: any): UserArticleIn
     isRead: dbInteraction.is_read,
     isSaved: dbInteraction.is_saved,
     interactedAt: dbInteraction.interacted_at,
+    readProgress: dbInteraction.read_progress || 0,
+  };
+}
+
+// Map database achievement to frontend Achievement type
+export function mapDbAchievementToAchievement(dbAchievement: any): Achievement {
+  return {
+    id: dbAchievement.id,
+    name: dbAchievement.name,
+    description: dbAchievement.description,
+    iconUrl: dbAchievement.icon_url,
+    criteria: dbAchievement.criteria,
+    createdAt: dbAchievement.created_at,
+  };
+}
+
+// Map database user achievement to frontend UserAchievement type
+export function mapDbUserAchievementToUserAchievement(dbUserAchievement: any): UserAchievement {
+  return {
+    id: dbUserAchievement.id,
+    userId: dbUserAchievement.user_id,
+    achievementId: dbUserAchievement.achievement_id,
+    earnedAt: dbUserAchievement.earned_at,
+    achievement: dbUserAchievement.achievements ? mapDbAchievementToAchievement(dbUserAchievement.achievements) : undefined,
   };
 }
 

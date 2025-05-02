@@ -50,7 +50,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/onboarding`
+            redirectTo: `${window.location.origin}/home`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent'
+            }
           }
         });
       } else if (provider === 'email' && options?.email && options?.password) {
@@ -91,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email, 
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`
+          emailRedirectTo: `${window.location.origin}/home`
         }
       });
       

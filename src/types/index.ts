@@ -1,4 +1,3 @@
-
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -9,7 +8,8 @@ export type Category =
   | 'health' 
   | 'sports' 
   | 'entertainment' 
-  | 'education';
+  | 'education'
+  | 'finance';
 
 export interface User {
   id: string;
@@ -52,6 +52,7 @@ export interface UserArticleInteraction {
   isRead: boolean;
   isSaved: boolean;
   interactedAt: string;
+  readProgress?: number;
 }
 
 export interface Quiz {

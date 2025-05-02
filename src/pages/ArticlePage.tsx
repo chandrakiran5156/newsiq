@@ -1,12 +1,14 @@
+
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Article } from '@/types';
 import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction } from '@/lib/api';
-import { mockArticles, categories } from '@/data/mockData'; // Fallback
+import { categories } from '@/data/mockData'; // Only using for category data
 import { useAuth } from '@/lib/supabase-auth';
 
 export default function ArticlePage() {
@@ -15,20 +17,20 @@ export default function ArticlePage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [fallbackArticle, setFallbackArticle] = useState<Article | null>(null);
 
-  // Fetch article data
+  // Fetch article data with suspense for better performance
   const { data: article, isLoading: isArticleLoading } = useQuery({
     queryKey: ['article', id],
     queryFn: () => id ? fetchArticleById(id) : Promise.reject('No article ID'),
     enabled: !!id,
     meta: {
       onError: (error: Error) => {
-        console.error('Failed to fetch article, using mock data', error);
-        if (id && mockArticles) {
-          const mockArticle = mockArticles.find(a => a.id === id);
-          if (mockArticle) setFallbackArticle(mockArticle);
-        }
+        console.error('Failed to fetch article:', error);
+        toast({
+          title: "Error loading article",
+          description: "Could not load the article. Please try again.",
+          variant: "destructive"
+        });
       }
     }
   });
@@ -40,7 +42,7 @@ export default function ArticlePage() {
     enabled: !!user && !!id,
     meta: {
       onError: (error: Error) => {
-        console.error('Failed to fetch article interaction', error);
+        console.error('Failed to fetch article interaction:', error);
       }
     }
   });
@@ -52,9 +54,9 @@ export default function ArticlePage() {
       return saveArticleInteraction(
         user.id, 
         id, 
-        data.isRead ?? interaction?.is_read ?? false,
-        data.isSaved ?? interaction?.is_saved ?? false,
-        data.readProgress ?? interaction?.read_progress ?? 0
+        data.isRead ?? interaction?.isRead ?? false,
+        data.isSaved ?? interaction?.isSaved ?? false,
+        data.readProgress ?? readingProgress
       );
     },
     onSuccess: () => {
@@ -132,31 +134,41 @@ export default function ArticlePage() {
   };
 
   const handleSaveToggle = () => {
-    updateInteraction({ isSaved: !(interaction?.is_saved) });
+    updateInteraction({ isSaved: !(interaction?.isSaved) });
     
     toast({
-      title: interaction?.is_saved ? "Removed from library" : "Saved to library",
-      description: interaction?.is_saved ? 
+      title: interaction?.isSaved ? "Removed from library" : "Saved to library",
+      description: interaction?.isSaved ? 
         "Article has been removed from your library" : 
         "Article has been saved to your library",
     });
   };
 
-  // Fallback to mock article if API fails
-  const displayArticle = article || fallbackArticle || (id && mockArticles ? mockArticles.find(a => a.id === id) : null);
-  const categoryData = displayArticle ? categories.find(cat => cat.id === displayArticle.category) : null;
+  const categoryData = article ? categories.find(cat => cat.id === article.category) : null;
   const isSaved = interaction?.isSaved || false;
 
   if (isArticleLoading) {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4 h-[60vh]">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-muted-foreground">Loading article...</p>
+      <div className="space-y-4">
+        <div className="mb-4">
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <Skeleton className="h-10 w-full mb-4" />
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-64 w-full mb-6" />
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
       </div>
     );
   }
 
-  if (!displayArticle) {
+  if (!article) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 h-[60vh]">
         <p className="text-2xl font-semibold">Article not found</p>
@@ -193,26 +205,27 @@ export default function ArticlePage() {
           <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
             {categoryData?.icon} {categoryData?.name}
           </span>
-          <span className={`text-sm font-medium difficulty-badge difficulty-badge-${displayArticle.difficultyLevel}`}>
-            {displayArticle.difficultyLevel}
+          <span className={`text-sm font-medium difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
+            {article.difficultyLevel}
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-3">{displayArticle.title}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-3">{article.title}</h1>
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
           <div className="flex items-center">
             <Clock size={16} className="mr-1" />
-            <span>{displayArticle.readTime} min read</span>
+            <span>{article.readTime} min read</span>
           </div>
-          <span>By {displayArticle.author}</span>
+          <span>By {article.author}</span>
         </div>
       </div>
 
       {/* Article image */}
       <div className="mb-6 rounded-lg overflow-hidden">
         <img 
-          src={displayArticle.imageUrl} 
-          alt={displayArticle.title} 
+          src={article.imageUrl} 
+          alt={article.title} 
           className="w-full h-auto object-cover"
+          loading="eager" // Load immediately for better UX
         />
       </div>
 
@@ -220,7 +233,7 @@ export default function ArticlePage() {
       <div 
         id="article-content"
         className="prose prose-sm sm:prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: displayArticle.content }}
+        dangerouslySetInnerHTML={{ __html: article.content }}
       />
 
       {/* Actions */}
@@ -251,7 +264,7 @@ export default function ArticlePage() {
             </Button>
             <Button 
               size="sm" 
-              onClick={() => navigate(`/quiz/${displayArticle.id}`)}
+              onClick={() => navigate(`/quiz/${article.id}`)}
             >
               Take Quiz
             </Button>

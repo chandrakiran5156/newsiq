@@ -10,11 +10,13 @@ import {
 // Article API
 export async function fetchArticles({
   limit = 10,
+  offset = 0,
   category = null,
   difficultyLevel = null,
   search = '',
 }: {
   limit?: number;
+  offset?: number;
   category?: Category | null;
   difficultyLevel?: DifficultyLevel | null;
   search?: string;
@@ -22,8 +24,15 @@ export async function fetchArticles({
   let query = supabase
     .from('articles')
     .select('*')
-    .order('published_at', { ascending: false })
-    .limit(limit);
+    .order('published_at', { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  if (offset) {
+    query = query.range(offset, offset + limit - 1);
+  }
 
   if (category) {
     query = query.eq('category', category);
@@ -34,10 +43,7 @@ export async function fetchArticles({
   }
 
   if (search) {
-    query = query.textSearch('title', search, { 
-      config: 'english',
-      type: 'websearch'
-    });
+    query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`);
   }
 
   const { data, error } = await query;

@@ -1,6 +1,5 @@
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,6 +17,7 @@ const categories: { value: Category; label: string }[] = [
   { value: "science", label: "Science" },
   { value: "politics", label: "Politics" },
   { value: "business", label: "Business" },
+  { value: "finance", label: "Finance" },
   { value: "health", label: "Health" },
   { value: "sports", label: "Sports" },
   { value: "entertainment", label: "Entertainment" },
@@ -66,18 +66,23 @@ export default function UserPreferences() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>("intermediate");
   
   // Update form when preferences are loaded
-  if (preferences && selectedCategories.length === 0) {
-    const cats = preferences.categories || [];
-    // Cast to ensure type safety
-    setSelectedCategories(cats.filter((cat): cat is Category => 
-      categories.some(c => c.value === cat)
-    ));
-    
-    const diff = preferences.difficulty_level || "intermediate";
-    if (difficultyLevels.some(d => d.value === diff)) {
-      setSelectedDifficulty(diff as DifficultyLevel);
+  useEffect(() => {
+    if (preferences && selectedCategories.length === 0) {
+      const prefCategories = preferences.categories || [];
+      
+      // Filter and cast the categories to ensure they are valid Category types
+      const validCategories = prefCategories.filter((cat): cat is Category => 
+        categories.some(c => c.value === cat)
+      );
+      
+      setSelectedCategories(validCategories);
+      
+      const diffLevel = preferences.difficulty_level;
+      if (diffLevel && difficultyLevels.some(d => d.value === diffLevel)) {
+        setSelectedDifficulty(diffLevel as DifficultyLevel);
+      }
     }
-  }
+  }, [preferences, selectedCategories.length]);
   
   const handleSavePreferences = () => {
     updatePrefs({
@@ -142,7 +147,7 @@ export default function UserPreferences() {
               <Label>Difficulty Level</Label>
               <Select 
                 value={selectedDifficulty} 
-                onValueChange={(value) => setSelectedDifficulty(value as DifficultyLevel)}
+                onValueChange={(value: string) => setSelectedDifficulty(value as DifficultyLevel)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select difficulty level" />

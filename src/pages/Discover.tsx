@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,6 @@ import { Article, Category } from '@/types';
 import { fetchArticles, fetchTrendingArticles, fetchArticlesByUserPreference } from '@/lib/api';
 import { useAuth } from '@/lib/supabase-auth';
 import { useSearchParams } from 'react-router-dom';
-import { mockArticles } from '@/data/mockData'; // Fallback
 
 // Define categories with their icons
 const categories: { id: Category; name: string; icon: string }[] = [
@@ -18,6 +18,7 @@ const categories: { id: Category; name: string; icon: string }[] = [
   { id: 'science', name: 'Science', icon: '🔬' },
   { id: 'politics', name: 'Politics', icon: '🏛️' },
   { id: 'business', name: 'Business', icon: '📊' },
+  { id: 'finance', name: 'Finance', icon: '💰' },
   { id: 'health', name: 'Health', icon: '🏥' },
   { id: 'sports', name: 'Sports', icon: '⚽' },
   { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
@@ -30,6 +31,8 @@ export default function Discover() {
   const [selectedTab, setSelectedTab] = useState('all');
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
   
   // Get category from URL if present
   useEffect(() => {
@@ -49,57 +52,53 @@ export default function Discover() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
   
-  // Fetch all articles with search filter
-  const { data: allArticles, isLoading: isAllLoading } = useQuery({
-    queryKey: ['articles', 'all', debouncedSearchTerm],
-    queryFn: () => fetchArticles({ search: debouncedSearchTerm }),
+  // Fetch all articles with search filter and pagination
+  const { data: allArticles = [], isLoading: isAllLoading, isFetching: isAllFetching } = useQuery({
+    queryKey: ['articles', 'all', debouncedSearchTerm, page],
+    queryFn: () => fetchArticles({ 
+      search: debouncedSearchTerm, 
+      limit: ITEMS_PER_PAGE,
+      offset: (page - 1) * ITEMS_PER_PAGE 
+    }),
     meta: {
-      onError: () => {
-        console.error('Failed to fetch articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch articles:', error);
       }
     }
   });
   
   // Fetch trending articles
-  const { data: trendingArticles, isLoading: isTrendingLoading } = useQuery({
+  const { data: trendingArticles = [], isLoading: isTrendingLoading } = useQuery({
     queryKey: ['articles', 'trending'],
     queryFn: () => fetchTrendingArticles(12),
     meta: {
-      onError: () => {
-        console.error('Failed to fetch trending articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch trending articles:', error);
       }
     }
   });
   
   // Fetch personalized articles
-  const { data: recommendedArticles, isLoading: isRecommendedLoading } = useQuery({
+  const { data: recommendedArticles = [], isLoading: isRecommendedLoading } = useQuery({
     queryKey: ['articles', 'recommended', user?.id],
     queryFn: () => user ? fetchArticlesByUserPreference(user.id, 12) : Promise.resolve([]),
     enabled: !!user,
     meta: {
-      onError: () => {
-        console.error('Failed to fetch recommended articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch recommended articles:', error);
       }
     }
   });
-
-  // Filter mock articles based on search term (fallback)
-  const filteredMockArticles = searchTerm 
-    ? mockArticles.filter(article => 
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.summary.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : mockArticles;
     
   // Get articles based on selected tab and search results
-  const getDisplayArticles = () => {
+  const getDisplayArticles = (): Article[] => {
     switch(selectedTab) {
       case 'trending':
-        return trendingArticles || filteredMockArticles.slice(0, 6);
+        return trendingArticles;
       case 'recommended':
-        return recommendedArticles || filteredMockArticles.slice(3, 9);
+        return recommendedArticles;
       default:
-        return allArticles || filteredMockArticles;
+        return allArticles;
     }
   };
 
@@ -111,6 +110,8 @@ export default function Discover() {
     : selectedTab === 'recommended' 
     ? isRecommendedLoading 
     : isAllLoading;
+
+  const isFetching = selectedTab === 'all' && isAllFetching;
 
   return (
     <div className="space-y-6">
@@ -124,7 +125,10 @@ export default function Discover() {
             type="text"
             placeholder="Search articles, topics, or keywords..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1); // Reset page on new search
+            }}
             className="pl-10 pr-4"
           />
         </div>
@@ -145,6 +149,7 @@ export default function Discover() {
                 onClick={() => {
                   setSearchParams({ category: category.id });
                   setSelectedTab('all');
+                  setPage(1); // Reset page on category change
                 }}
               >
                 <span className="mr-2">{category.icon}</span> {category.name}
@@ -156,6 +161,7 @@ export default function Discover() {
               onClick={() => {
                 setSearchParams({});
                 setSelectedTab('all');
+                setPage(1); // Reset page on viewing all
               }}
             >
               View All
@@ -164,7 +170,10 @@ export default function Discover() {
         </div>
         
         {/* Content Tabs */}
-        <Tabs defaultValue="all" value={selectedTab} className="w-full" onValueChange={setSelectedTab}>
+        <Tabs defaultValue="all" value={selectedTab} className="w-full" onValueChange={(value) => {
+          setSelectedTab(value);
+          setPage(1); // Reset page on tab change
+        }}>
           <div className="flex justify-between items-center mb-4">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
@@ -194,11 +203,35 @@ export default function Discover() {
                   ))}
                 </div>
               ) : displayArticles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {displayArticles.map((article: Article) => (
-                    <ArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {displayArticles.map((article: Article) => (
+                      <ArticleCard key={article.id} article={article} />
+                    ))}
+                  </div>
+                  
+                  {/* Only show pagination for 'all' tab */}
+                  {selectedTab === 'all' && (
+                    <div className="flex justify-center mt-8">
+                      <Button
+                        variant="outline"
+                        className="mx-1"
+                        disabled={page === 1}
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="mx-1"
+                        disabled={displayArticles.length < ITEMS_PER_PAGE || isFetching}
+                        onClick={() => setPage(p => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-12">
                   <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />

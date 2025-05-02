@@ -1,190 +1,314 @@
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/supabase-auth";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUserProfile, fetchUserAchievements, getReadArticles } from "@/lib/api";
-import { Achievement } from "@/types";
-import { Loader2, LogOut } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import UserPreferences from "@/components/profile/UserPreferences";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Award, BookOpen, Trophy } from 'lucide-react';
+import { useAuth } from '@/lib/supabase-auth';
+import { fetchUserProfile, fetchUserAchievements, getReadArticles, getSavedArticles } from '@/lib/api';
+import { mapArray, mapDbUserAchievementToUserAchievement } from '@/lib/mappers';
+import ArticleList from '@/components/articles/ArticleList';
+import UserPreferences from '@/components/profile/UserPreferences';
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [achievementsData, setAchievementsData] = useState<{
-    earned: Achievement[];
-    locked: Achievement[];
-  }>({ earned: [], locked: [] });
-  
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+
   // Fetch user profile
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
-    queryKey: ['profile', user?.id],
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['userProfile', user?.id],
     queryFn: () => user ? fetchUserProfile(user.id) : Promise.reject('No user'),
     enabled: !!user,
-  });
-
-  // Fetch user achievements
-  const { data: achievements, isLoading: isLoadingAchievements } = useQuery({
-    queryKey: ['achievements', user?.id],
-    queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
-    enabled: !!user,
-    onSuccess: (data) => {
-      if (data) {
-        // Split into earned and locked achievements
-        const earned = data.filter(item => item.earned_at).map(item => item.achievements);
-        const locked = data.filter(item => !item.earned_at).map(item => item.achievements);
-        setAchievementsData({ earned, locked });
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch user profile:', error);
       }
     }
   });
 
-  // Fetch articles read
-  const { data: articlesRead, isLoading: isLoadingArticles } = useQuery({
-    queryKey: ['articles-read', user?.id],
-    queryFn: () => user ? getReadArticles(user.id) : Promise.reject('No user'),
+  // Fetch user achievements
+  const { data: achievements, isLoading: isAchievementsLoading } = useQuery({
+    queryKey: ['userAchievements', user?.id],
+    queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
     enabled: !!user,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch user achievements:', error);
+      }
+    }
   });
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      toast({
-        title: "Error signing out",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive"
-      });
+  // Fetch read articles
+  const { data: readArticles, isLoading: isReadLoading } = useQuery({
+    queryKey: ['readArticles', user?.id],
+    queryFn: () => user ? getReadArticles(user.id) : Promise.reject('No user'),
+    enabled: !!user && activeTab === 'reading-history',
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch read articles:', error);
+      }
     }
-  };
+  });
 
-  if (isLoadingProfile || isLoadingAchievements || isLoadingArticles) {
+  // Fetch saved articles
+  const { data: savedArticles, isLoading: isSavedLoading } = useQuery({
+    queryKey: ['savedArticles', user?.id],
+    queryFn: () => user ? getSavedArticles(user.id) : Promise.reject('No user'),
+    enabled: !!user && activeTab === 'saved',
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch saved articles:', error);
+      }
+    }
+  });
+
+  const mappedAchievements = achievements ? mapArray(achievements, mapDbUserAchievementToUserAchievement) : [];
+
+  // Get stats from the leaderboard view
+  const quizzesTaken = profile?.quizzes_taken || 0;
+  const avgQuizScore = profile?.avg_quiz_score || 0;
+  const currentStreak = profile?.current_streak || 0;
+
+  if (!user) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="text-center p-12">
+        <h2 className="text-2xl font-bold mb-4">Please log in to view your profile</h2>
       </div>
     );
   }
 
-  // Use profile data or fallbacks
-  const userStats = {
-    articlesRead: articlesRead?.length || 0,
-    quizzesTaken: profile?.quizzes_taken || 0,
-    quizAvgScore: profile?.avg_quiz_score || 0,
-    streak: profile?.current_streak || 0
-  };
-  
   return (
-    <div className="space-y-6 pb-8">
-      {/* Profile header */}
-      <div className="flex items-center space-x-4">
-        <img 
-          src={profile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile?.username || 'User'}`} 
-          alt={profile?.username || 'User'} 
-          className="w-16 h-16 rounded-full"
-        />
-        <div>
-          <h1 className="text-xl font-bold">{profile?.username || 'User'}</h1>
-          <p className="text-sm text-muted-foreground">
-            Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}
-          </p>
-        </div>
-      </div>
+    <div>
+      <h1 className="text-2xl font-bold mb-6">My Profile</h1>
 
-      {/* User stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-card rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-primary">{userStats.articlesRead}</div>
-          <div className="text-sm text-muted-foreground">Articles Read</div>
-        </div>
-        <div className="bg-card rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-primary">{userStats.quizzesTaken}</div>
-          <div className="text-sm text-muted-foreground">Quizzes Taken</div>
-        </div>
-        <div className="bg-card rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-primary">{userStats.quizAvgScore}%</div>
-          <div className="text-sm text-muted-foreground">Quiz Average</div>
-        </div>
-        <div className="bg-card rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-primary">{userStats.streak}</div>
-          <div className="text-sm text-muted-foreground">Day Streak</div>
-        </div>
-      </div>
-
-      {/* Achievements section */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Achievements</h2>
-        
-        {/* Earned achievements */}
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">Earned</h3>
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {achievementsData.earned.length > 0 ? (
-            achievementsData.earned.map((achievement) => (
-              <div key={achievement.id} className="bg-card rounded-lg p-3 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="text-4xl">{achievement.icon_url}</div>
-                  <div>
-                    <div className="font-medium">{achievement.name}</div>
-                    <div className="text-xs text-muted-foreground">{achievement.description}</div>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-6">
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Profile Card */}
+          <Card>
+            <CardHeader className="text-center">
+              <div className="flex flex-col items-center">
+                <Avatar className="h-20 w-20 mb-2">
+                  <AvatarImage src={profile?.avatar_url || ''} alt={profile?.username || 'User'} />
+                  <AvatarFallback>
+                    {profile?.username?.substring(0, 2).toUpperCase() || user.email?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <CardTitle>{profile?.full_name || profile?.username || 'User'}</CardTitle>
+                <CardDescription>{user.email}</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-lg font-bold">{currentStreak || 0}</p>
+                  <p className="text-xs text-muted-foreground">Day Streak</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold">{readArticles?.length || 0}</p>
+                  <p className="text-xs text-muted-foreground">Articles Read</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold">{quizzesTaken || 0}</p>
+                  <p className="text-xs text-muted-foreground">Quizzes</p>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-6 text-muted-foreground">
-              No achievements earned yet. Keep reading and taking quizzes!
-            </div>
-          )}
-        </div>
-        
-        {/* Locked achievements */}
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">Locked</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {achievementsData.locked.length > 0 ? (
-            achievementsData.locked.map((achievement) => (
-              <div key={achievement.id} className="bg-secondary rounded-lg p-3 shadow-sm opacity-70">
-                <div className="flex items-center space-x-3">
-                  <div className="text-4xl">{achievement.icon_url}</div>
-                  <div>
-                    <div className="font-medium">{achievement.name}</div>
-                    <div className="text-xs text-muted-foreground">{achievement.criteria}</div>
-                  </div>
-                </div>
+            </CardContent>
+          </Card>
+
+          {/* Achievements */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center">
+                <Award className="mr-2 h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Achievements</CardTitle>
               </div>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-6 text-muted-foreground">
-              Congratulations! You've unlocked all achievements.
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Settings section */}
-      <div className="mt-8 pt-6 border-t border-border">
-        <h2 className="text-xl font-semibold mb-4">Settings</h2>
-        <div className="space-y-3">
-          <Button variant="outline" className="w-full justify-start">
-            Edit Profile
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            Notification Settings
-          </Button>
+            </CardHeader>
+            <CardContent>
+              {isAchievementsLoading ? (
+                <div className="text-center p-4">Loading achievements...</div>
+              ) : mappedAchievements.length > 0 ? (
+                <div className="space-y-3">
+                  {mappedAchievements.slice(0, 3).map((item) => (
+                    <div key={item.id} className="flex items-center">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+                        <Award className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{item.achievement?.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.achievement?.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4">
+                  <p className="text-muted-foreground">No achievements yet</p>
+                </div>
+              )}
+            </CardContent>
+            {mappedAchievements.length > 3 && (
+              <CardFooter>
+                <button 
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => setActiveTab('achievements')}
+                >
+                  View all {mappedAchievements.length} achievements
+                </button>
+              </CardFooter>
+            )}
+          </Card>
+
+          {/* Topic Preferences */}
           <UserPreferences />
-          <Button variant="outline" className="w-full justify-start">
-            Connected Accounts
-          </Button>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start text-destructive hover:text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Log Out
-          </Button>
+        </div>
+
+        {/* Main Content */}
+        <div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-4 mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="reading-history">Read</TabsTrigger>
+              <TabsTrigger value="saved">Saved</TabsTrigger>
+              <TabsTrigger value="achievements">Achievements</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Trophy className="mr-2 h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Performance</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-medium">Quiz Average</p>
+                      <div className="h-2 bg-muted rounded-full mt-1">
+                        <div 
+                          className="h-full bg-primary rounded-full" 
+                          style={{ width: `${avgQuizScore}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-right mt-1">{Math.round(Number(avgQuizScore))}%</p>
+                    </div>
+                    <div>
+                      <p className="font-medium">Reading Streak</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-2xl font-bold flex items-center text-primary">
+                          <BookOpen className="h-5 w-5 mr-2" />
+                          {currentStreak} days
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recently Read</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isReadLoading ? (
+                    <div className="text-center p-4">Loading articles...</div>
+                  ) : readArticles && readArticles.length > 0 ? (
+                    <ArticleList articles={readArticles.slice(0, 3)} />
+                  ) : (
+                    <div className="text-center p-4">
+                      <p className="text-muted-foreground">You haven't read any articles yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="reading-history">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reading History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isReadLoading ? (
+                    <div className="text-center p-4">Loading articles...</div>
+                  ) : readArticles && readArticles.length > 0 ? (
+                    <ArticleList articles={readArticles} />
+                  ) : (
+                    <div className="text-center p-12">
+                      <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No reading history yet</h3>
+                      <p className="text-muted-foreground">
+                        Articles you read will appear here
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="saved">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Saved Articles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isSavedLoading ? (
+                    <div className="text-center p-4">Loading saved articles...</div>
+                  ) : savedArticles && savedArticles.length > 0 ? (
+                    <ArticleList articles={savedArticles} />
+                  ) : (
+                    <div className="text-center p-12">
+                      <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No saved articles yet</h3>
+                      <p className="text-muted-foreground">
+                        Articles you save will appear here
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="achievements">
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Achievements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isAchievementsLoading ? (
+                    <div className="text-center p-4">Loading achievements...</div>
+                  ) : mappedAchievements.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {mappedAchievements.map((item) => (
+                        <div key={item.id} className="border rounded-lg p-4 flex items-start">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+                            <Award className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{item.achievement?.name}</p>
+                            <p className="text-sm text-muted-foreground">{item.achievement?.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Earned {new Date(item.earnedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center p-12">
+                      <Award className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No achievements yet</h3>
+                      <p className="text-muted-foreground">
+                        Complete activities on NewsIQ to earn achievements
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
