@@ -1,6 +1,6 @@
 
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Article } from '@/types';
 import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Share } from 'lucide-react';
@@ -18,11 +18,12 @@ export default function ArticlePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch article data with suspense for better performance
+  // Fetch article data with eager loading for better performance
   const { data: article, isLoading: isArticleLoading } = useQuery({
     queryKey: ['article', id],
     queryFn: () => id ? fetchArticleById(id) : Promise.reject('No article ID'),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to improve loading speed
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch article:', error);
@@ -100,16 +101,16 @@ export default function ArticlePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [id, user]);
 
-  // Update read progress periodically
+  // Update read progress less frequently to reduce database writes
   useEffect(() => {
     if (!id || !user) return;
     
-    // Update read progress every 30 seconds
+    // Update read progress every 60 seconds instead of 30 seconds
     const timer = setInterval(() => {
       if (readingProgress > 0) {
         updateInteraction({ readProgress: Math.round(readingProgress) });
       }
-    }, 30000);
+    }, 60000);
     
     return () => clearInterval(timer);
   }, [readingProgress, id, user]);
@@ -219,13 +220,14 @@ export default function ArticlePage() {
         </div>
       </div>
 
-      {/* Article image */}
+      {/* Article image - optimized for faster loading */}
       <div className="mb-6 rounded-lg overflow-hidden">
         <img 
           src={article.imageUrl} 
           alt={article.title} 
           className="w-full h-auto object-cover"
           loading="eager" // Load immediately for better UX
+          fetchPriority="high" // Modern browsers prioritize loading this image
         />
       </div>
 

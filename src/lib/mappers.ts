@@ -22,11 +22,43 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
 
 // Map database quiz to frontend Quiz type
 export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
-  return {
-    id: dbQuiz.id,
-    articleId: dbQuiz.article_id,
-    questions: Array.isArray(dbQuiz.questions) ? dbQuiz.questions : [],
-  };
+  try {
+    let questions = [];
+    
+    // Handle the case where questions is a string (JSON)
+    if (dbQuiz.questions && typeof dbQuiz.questions === 'string') {
+      try {
+        questions = JSON.parse(dbQuiz.questions);
+      } catch (e) {
+        console.error('Failed to parse quiz questions:', e);
+        questions = [];
+      }
+    } 
+    // Handle the case where questions is already an object (JSONB from Postgres)
+    else if (dbQuiz.questions && typeof dbQuiz.questions === 'object') {
+      // If it's an array, use it directly
+      if (Array.isArray(dbQuiz.questions)) {
+        questions = dbQuiz.questions;
+      } 
+      // If it's a JSONB object from Postgres
+      else {
+        questions = dbQuiz.questions;
+      }
+    }
+    
+    return {
+      id: dbQuiz.id,
+      articleId: dbQuiz.article_id,
+      questions: questions
+    };
+  } catch (error) {
+    console.error('Error mapping quiz data:', error);
+    return {
+      id: dbQuiz.id,
+      articleId: dbQuiz.article_id,
+      questions: []
+    };
+  }
 }
 
 // Map database interaction to frontend UserArticleInteraction type
@@ -73,6 +105,7 @@ export function mapDbUserAchievementToUserAchievement(dbUserAchievement: any): U
 
 // Helper to map array of items
 export function mapArray<T, U>(items: T[], mapperFn: (item: T) => U): U[] {
+  if (!items) return [];
   return items.map(mapperFn);
 }
 

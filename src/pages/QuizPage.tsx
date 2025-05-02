@@ -46,11 +46,12 @@ export default function QuizPage() {
     }
   });
 
-  // Fetch quiz
+  // Fetch quiz with improved error handling
   const { data: quiz, isLoading: isQuizLoading } = useQuery({
     queryKey: ['quiz', id],
     queryFn: () => id ? fetchQuizByArticleId(id) : Promise.reject('No article ID'),
     enabled: !!id,
+    staleTime: 300000, // Cache quiz data for 5 minutes
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch quiz:', error);
@@ -83,7 +84,30 @@ export default function QuizPage() {
     },
   });
 
-  const currentQuestion: QuizQuestion | undefined = quiz?.questions?.[currentQuestionIndex] as QuizQuestion;
+  // Parse JSON questions if needed
+  const getQuizQuestions = () => {
+    if (!quiz) return [];
+    
+    // Check if questions is a JSON string that needs parsing
+    if (quiz.questions && typeof quiz.questions === 'string') {
+      try {
+        return JSON.parse(quiz.questions);
+      } catch (e) {
+        console.error('Failed to parse quiz questions:', e);
+        return [];
+      }
+    }
+    
+    // Handle case where questions is already an array
+    if (Array.isArray(quiz.questions)) {
+      return quiz.questions;
+    }
+    
+    return [];
+  };
+
+  const questions = getQuizQuestions();
+  const currentQuestion: QuizQuestion | undefined = questions[currentQuestionIndex];
 
   const handleSelectOption = (optionIndex: number) => {
     if (hasAnswered) return;
@@ -113,13 +137,13 @@ export default function QuizPage() {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < (quiz?.questions?.length || 0) - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
       setSelectedOption(null);
       setHasAnswered(false);
     } else {
       // Calculate final score
-      const finalScore = (score / (quiz?.questions?.length || 1)) * 100;
+      const finalScore = (score / Math.max(questions.length, 1)) * 100;
       setQuizFinished(true);
       
       // Submit quiz if user is authenticated
@@ -152,7 +176,7 @@ export default function QuizPage() {
     );
   }
 
-  if (!article || !quiz || !quiz.questions || quiz.questions.length === 0) {
+  if (!article || !quiz || !questions || questions.length === 0) {
     return (
       <div className="text-center py-12">
         <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -193,17 +217,17 @@ export default function QuizPage() {
                 <Award className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-2xl font-bold mb-2">
-                {Math.round((score / quiz.questions.length) * 100)}%
+                {Math.round((score / questions.length) * 100)}%
               </h3>
               <p className="text-muted-foreground">
-                You got {score} out of {quiz.questions.length} questions correct
+                You got {score} out of {questions.length} questions correct
               </p>
             </div>
             
             {/* Answer summary */}
             <div className="border rounded-lg divide-y">
               {answers.map((answer, index) => {
-                const question = quiz.questions[index] as QuizQuestion;
+                const question = questions[index];
                 return (
                   <div key={index} className="p-3 flex items-center">
                     {answer.isCorrect ? (
@@ -240,7 +264,7 @@ export default function QuizPage() {
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
+                Question {currentQuestionIndex + 1} of {questions.length}
               </span>
               <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                 {article.category}
@@ -299,7 +323,7 @@ export default function QuizPage() {
               </Button>
             ) : (
               <Button onClick={handleNext}>
-                {currentQuestionIndex < (quiz.questions.length - 1)
+                {currentQuestionIndex < (questions.length - 1)
                   ? 'Next Question'
                   : 'Finish Quiz'}
               </Button>

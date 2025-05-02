@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +15,7 @@ import {
   fetchArticlesByUserPreference, 
   fetchLeaderboard 
 } from '@/lib/api';
-import { mockArticles } from '@/data/mockData'; // Fallback for development
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -29,8 +30,8 @@ export default function HomePage() {
     queryKey: ['trendingArticles'],
     queryFn: () => fetchTrendingArticles(3),
     meta: {
-      onError: () => {
-        console.error('Failed to fetch trending articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch trending articles', error);
       }
     }
   });
@@ -41,8 +42,8 @@ export default function HomePage() {
     queryFn: () => user ? fetchArticlesByUserPreference(user.id) : Promise.resolve([]),
     enabled: !!user,
     meta: {
-      onError: () => {
-        console.error('Failed to fetch personalized articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch personalized articles', error);
       }
     }
   });
@@ -52,8 +53,8 @@ export default function HomePage() {
     queryKey: ['articles', selectedCategory],
     queryFn: () => fetchArticles({ category: selectedCategory }),
     meta: {
-      onError: () => {
-        console.error('Failed to fetch filtered articles, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch filtered articles', error);
       }
     }
   });
@@ -63,19 +64,20 @@ export default function HomePage() {
     queryKey: ['leaderboard'],
     queryFn: () => fetchLeaderboard(3),
     meta: {
-      onError: () => {
-        console.error('Failed to fetch leaderboard, using mock data');
+      onError: (error: Error) => {
+        console.error('Failed to fetch leaderboard', error);
       }
     }
   });
 
   // Use filtered articles if a category is selected, otherwise use personalized articles
+  // NO FALLBACK to mock data anymore - only use database articles
   const displayedArticles = selectedCategory 
-    ? (filteredArticles || mockArticles.filter(a => a.category === selectedCategory))
-    : (personalizedArticles || mockArticles);
+    ? (filteredArticles || [])
+    : (personalizedArticles || []);
 
-  // Use trending articles from API or fallback to mock data
-  const displayedTrendingArticles = trendingArticles || mockArticles.slice(0, 3);
+  // Use trending articles from API with no fallback to mock data
+  const displayedTrendingArticles = trendingArticles || [];
 
   return (
     <div className="space-y-8 pb-20">
@@ -173,7 +175,7 @@ export default function HomePage() {
                   </Card>
                 </div>
               ))
-            ) : (
+            ) : displayedTrendingArticles.length > 0 ? (
               displayedTrendingArticles.map((article: Article) => (
                 <div key={article.id} className="w-72 flex-shrink-0">
                   <Link to={`/article/${article.id}`} className="block">
@@ -183,6 +185,7 @@ export default function HomePage() {
                           src={article.imageUrl || "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb"} 
                           alt={article.title}
                           className="w-full h-full object-cover" 
+                          loading="eager"
                         />
                       </div>
                       <CardHeader className="p-4">
@@ -203,6 +206,10 @@ export default function HomePage() {
                   </Link>
                 </div>
               ))
+            ) : (
+              <div className="w-full py-12 text-center">
+                <p className="text-muted-foreground">No trending articles found</p>
+              </div>
             )}
           </div>
         </div>
@@ -233,13 +240,9 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : leaderboard && leaderboard.length > 0 ? (
               <div className="space-y-3">
-                {(leaderboard || [
-                  { id: '1', username: "Alex Johnson", points: 2840 },
-                  { id: '2', username: "Taylor Smith", points: 2620 },
-                  { id: '3', username: "Jordan Lee", points: 2420 }
-                ]).map((user, idx) => (
+                {leaderboard.map((user, idx) => (
                   <div key={user.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center 
@@ -248,11 +251,15 @@ export default function HomePage() {
                             'bg-amber-600/20 text-amber-700'}`}>
                         {idx + 1}
                       </span>
-                      <span>{user.username}</span>
+                      <span>{user.username || `User ${user.id.substring(0, 4)}`}</span>
                     </div>
-                    <span className="font-semibold">{user.points} pts</span>
+                    <span className="font-semibold">{user.points || user.weekly_points || 0} pts</span>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">No leaderboard data available</p>
               </div>
             )}
             <div className="mt-4 text-center">
@@ -285,11 +292,15 @@ export default function HomePage() {
               </Card>
             ))}
           </div>
-        ) : (
+        ) : displayedArticles.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {displayedArticles.map((article: Article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No articles found. Try selecting a different category.</p>
           </div>
         )}
       </section>
