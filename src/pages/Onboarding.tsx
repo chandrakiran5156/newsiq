@@ -1,264 +1,222 @@
 
 import { useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { categories } from '@/data/mockData';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/supabase-auth';
+import { supabase } from '@/integrations/supabase/client';
+import { Category, DifficultyLevel } from '@/types';
+
+const categories: { id: Category; name: string; icon: string }[] = [
+  { id: 'technology', name: 'Technology', icon: '💻' },
+  { id: 'science', name: 'Science', icon: '🔬' },
+  { id: 'politics', name: 'Politics', icon: '🏛️' },
+  { id: 'business', name: 'Business', icon: '📊' },
+  { id: 'health', name: 'Health', icon: '🏥' },
+  { id: 'sports', name: 'Sports', icon: '⚽' },
+  { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
+  { id: 'education', name: 'Education', icon: '📚' },
+];
+
+const difficultyLevels: { id: DifficultyLevel; name: string; description: string }[] = [
+  { 
+    id: 'beginner', 
+    name: 'Beginner', 
+    description: 'Simple language, short articles, basic concepts' 
+  },
+  { 
+    id: 'intermediate', 
+    name: 'Intermediate', 
+    description: 'More detailed articles with some specialized terminology' 
+  },
+  { 
+    id: 'advanced', 
+    name: 'Advanced', 
+    description: 'In-depth analysis, technical concepts, specialized topics' 
+  },
+];
 
 export default function Onboarding() {
-  const [step, setStep] = useState(1);
-  const totalSteps = 4;
-  
-  // Form state
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState<string | null>(null);
-  const [notificationTime, setNotificationTime] = useState<string | null>(null);
-  
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
-  };
-  
-  const handleNextStep = () => {
-    if (step < totalSteps) {
-      setStep(prev => prev + 1);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>(['technology', 'business']);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('intermediate');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  // Redirect if not authenticated
+  if (!isLoading && !isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handleCategoryToggle = (category: Category) => {
+    if (selectedCategories.includes(category)) {
+      // Don't allow deselecting all categories
+      if (selectedCategories.length > 1) {
+        setSelectedCategories(selectedCategories.filter(c => c !== category));
+      }
     } else {
-      // Final submission
-      console.log('Onboarding completed with:', {
-        categories: selectedCategories,
-        difficulty,
-        notificationTime
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const handleDifficultySelect = (difficulty: DifficultyLevel) => {
+    setSelectedDifficulty(difficulty);
+  };
+
+  const handleNext = () => {
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => prev - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Update user preferences in Supabase
+      const { error } = await supabase
+        .from('user_preferences')
+        .update({
+          categories: selectedCategories,
+          difficulty_level: selectedDifficulty,
+        })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Preferences saved",
+        description: "Your preferences have been updated successfully!",
       });
-      window.location.href = '/';
+      
+      navigate('/home');
+    } catch (error: any) {
+      toast({
+        title: "Error saving preferences",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  const handlePrevStep = () => {
-    if (step > 1) {
-      setStep(prev => prev - 1);
-    }
-  };
-  
+
   return (
-    <div className="container max-w-md mx-auto px-4 py-8">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold mb-2">Set Up Your NewsIQ</h1>
-        <p className="text-muted-foreground">Let's personalize your experience</p>
-      </div>
-      
-      <div className="mb-6">
-        <Progress value={(step / totalSteps) * 100} className="h-2" />
-        <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          <span>Step {step} of {totalSteps}</span>
-          <span>{Math.round((step / totalSteps) * 100)}% Complete</span>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary/5 to-accent/10">
+      <div className="w-full max-w-3xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary">Welcome to NewsIQ</h1>
+          <p className="text-muted-foreground">Let's personalize your experience</p>
         </div>
-      </div>
-      
-      <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-        {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
-            <h2 className="text-xl font-semibold mb-4">
-              What topics interest you?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select at least 3 topics you'd like to see in your feed
-            </p>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryToggle(category.id)}
-                  className={`relative p-4 rounded-lg border transition-all ${
-                    selectedCategories.includes(category.id)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
+
+        <Card>
+          <CardContent className="p-6">
+            <Tabs value={`step-${currentStep}`}>
+              <TabsList className="grid grid-cols-2 w-full mb-8">
+                <TabsTrigger 
+                  value="step-0"
+                  disabled
+                  className={`${currentStep === 0 ? "bg-primary text-primary-foreground" : ""}`}
                 >
-                  {selectedCategories.includes(category.id) && (
-                    <span className="absolute top-2 right-2 text-primary">
-                      <CheckIcon size={16} />
-                    </span>
-                  )}
-                  <div className="text-2xl mb-1">{category.icon}</div>
-                  <div className="font-medium">{category.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {step === 2 && (
-          <div className="space-y-4 animate-fade-in">
-            <h2 className="text-xl font-semibold mb-4">
-              What content depth do you prefer?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select your preferred level of content complexity
-            </p>
-            
-            <RadioGroup value={difficulty || ''} onValueChange={setDifficulty}>
-              <div className="space-y-3">
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${difficulty === 'beginner' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="beginner" id="beginner" />
-                  <Label htmlFor="beginner" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Beginner</span>
-                    <p className="text-sm text-muted-foreground">
-                      Easy-to-understand content with basic explanations
-                    </p>
-                  </Label>
+                  1. Select Topics
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="step-1"
+                  disabled
+                  className={`${currentStep === 1 ? "bg-primary text-primary-foreground" : ""}`}
+                >
+                  2. Choose Difficulty
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="step-0" className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Select topics you're interested in</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Choose categories that interest you the most. We'll personalize your news feed based on your selections.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {categories.map(category => (
+                      <Button
+                        key={category.id}
+                        variant={selectedCategories.includes(category.id) ? "default" : "outline"}
+                        className="h-auto py-4 px-3 flex flex-col items-center justify-center gap-2"
+                        onClick={() => handleCategoryToggle(category.id)}
+                      >
+                        <span className="text-2xl">{category.icon}</span>
+                        <span>{category.name}</span>
+                        {selectedCategories.includes(category.id) && (
+                          <Badge variant="secondary" className="bg-primary/20">
+                            <CheckIcon className="h-3 w-3 mr-1" /> Selected
+                          </Badge>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${difficulty === 'intermediate' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="intermediate" id="intermediate" />
-                  <Label htmlFor="intermediate" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Intermediate</span>
-                    <p className="text-sm text-muted-foreground">
-                      Balanced content with some deeper insights
-                    </p>
-                  </Label>
+                <div className="flex justify-end">
+                  <Button onClick={handleNext}>
+                    Continue
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="step-1" className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Choose your content complexity</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Select the difficulty level that best matches your knowledge and preferences.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {difficultyLevels.map(level => (
+                      <div
+                        key={level.id}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                          selectedDifficulty === level.id
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                        onClick={() => handleDifficultySelect(level.id)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{level.name}</h3>
+                          {selectedDifficulty === level.id && (
+                            <CheckIcon className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{level.description}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${difficulty === 'advanced' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="advanced" id="advanced" />
-                  <Label htmlFor="advanced" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Advanced</span>
-                    <p className="text-sm text-muted-foreground">
-                      In-depth analysis and expert-level content
-                    </p>
-                  </Label>
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={handlePrevious}>
+                    Back
+                  </Button>
+                  <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Get Started"}
+                  </Button>
                 </div>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
-        
-        {step === 3 && (
-          <div className="space-y-4 animate-fade-in">
-            <h2 className="text-xl font-semibold mb-4">
-              When would you like to receive news updates?
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select your preferred time for notifications
-            </p>
-            
-            <RadioGroup value={notificationTime || ''} onValueChange={setNotificationTime}>
-              <div className="space-y-3">
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${notificationTime === 'morning' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="morning" id="morning" />
-                  <Label htmlFor="morning" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Morning</span>
-                    <p className="text-sm text-muted-foreground">
-                      Get updates between 7AM - 9AM
-                    </p>
-                  </Label>
-                </div>
-                
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${notificationTime === 'afternoon' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="afternoon" id="afternoon" />
-                  <Label htmlFor="afternoon" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Afternoon</span>
-                    <p className="text-sm text-muted-foreground">
-                      Get updates between 12PM - 2PM
-                    </p>
-                  </Label>
-                </div>
-                
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${notificationTime === 'evening' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="evening" id="evening" />
-                  <Label htmlFor="evening" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Evening</span>
-                    <p className="text-sm text-muted-foreground">
-                      Get updates between 6PM - 8PM
-                    </p>
-                  </Label>
-                </div>
-                
-                <div className={`flex items-center space-x-3 rounded-lg border p-4 ${notificationTime === 'none' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <RadioGroupItem value="none" id="none" />
-                  <Label htmlFor="none" className="flex-1 cursor-pointer">
-                    <span className="font-medium">No Notifications</span>
-                    <p className="text-sm text-muted-foreground">
-                      I'll check the app myself
-                    </p>
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
-        
-        {step === 4 && (
-          <div className="space-y-4 animate-fade-in">
-            <h2 className="text-xl font-semibold mb-4">
-              You're all set!
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              We've personalized your NewsIQ experience based on your preferences. You can always change these settings later.
-            </p>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-medium">Your Selected Topics</h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedCategories.length > 0 ? (
-                    selectedCategories.map(catId => {
-                      const category = categories.find(c => c.id === catId);
-                      return category ? (
-                        <span key={catId} className="bg-background px-3 py-1 rounded-full text-sm">
-                          {category.icon} {category.name}
-                        </span>
-                      ) : null;
-                    })
-                  ) : (
-                    <span className="text-sm text-muted-foreground">No topics selected</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-medium">Content Depth</h3>
-                <p className="text-sm mt-1 capitalize">
-                  {difficulty || 'Not specified'}
-                </p>
-              </div>
-              
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-medium">Notification Preference</h3>
-                <p className="text-sm mt-1 capitalize">
-                  {notificationTime === 'none' ? 'No notifications' : notificationTime || 'Not specified'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <div className="mt-6 flex justify-between">
-        {step > 1 ? (
-          <Button variant="outline" onClick={handlePrevStep}>
-            Back
-          </Button>
-        ) : (
-          <div></div> // Empty div to maintain layout
-        )}
-        
-        <Button 
-          onClick={handleNextStep}
-          disabled={
-            (step === 1 && selectedCategories.length < 1) ||
-            (step === 2 && !difficulty) ||
-            (step === 3 && !notificationTime)
-          }
-        >
-          {step === totalSteps ? 'Finish' : 'Next'}
-        </Button>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

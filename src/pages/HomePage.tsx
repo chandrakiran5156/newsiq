@@ -1,27 +1,75 @@
-import { useState, useCallback } from 'react';
+
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import ArticleCard from '@/components/articles/ArticleCard';
 import CategoryFilters from '@/components/articles/CategoryFilters';
-import { mockArticles } from '@/data/mockData';
-import { Category } from '@/types';
+import { Category, Article } from '@/types';
 import { Trophy, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/supabase-auth';
+import { 
+  fetchArticles, 
+  fetchTrendingArticles, 
+  fetchArticlesByUserPreference, 
+  fetchLeaderboard 
+} from '@/lib/api';
+import { mockArticles } from '@/data/mockData'; // Fallback for development
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-
+  const { user } = useAuth();
+  
   const handleCategorySelect = useCallback((categoryId: Category | null) => {
     setSelectedCategory(categoryId);
   }, []);
 
-  const filteredArticles = selectedCategory
-    ? mockArticles.filter(article => article.category === selectedCategory)
-    : mockArticles;
-    
-  // Get the top 3 articles for featured section
-  const featuredArticles = mockArticles.slice(0, 3);
-  
+  // Fetch trending articles
+  const { data: trendingArticles, isLoading: isTrendingLoading } = useQuery({
+    queryKey: ['trendingArticles'],
+    queryFn: () => fetchTrendingArticles(3),
+    onError: () => {
+      console.error('Failed to fetch trending articles, using mock data');
+    }
+  });
+
+  // Fetch personalized articles based on user preferences
+  const { data: personalizedArticles, isLoading: isPersonalizedLoading } = useQuery({
+    queryKey: ['personalizedArticles', user?.id],
+    queryFn: () => user ? fetchArticlesByUserPreference(user.id) : Promise.resolve([]),
+    enabled: !!user,
+    onError: () => {
+      console.error('Failed to fetch personalized articles, using mock data');
+    }
+  });
+
+  // Fetch filtered articles based on selected category
+  const { data: filteredArticles, isLoading: isFilteredLoading } = useQuery({
+    queryKey: ['articles', selectedCategory],
+    queryFn: () => fetchArticles({ category: selectedCategory }),
+    onError: () => {
+      console.error('Failed to fetch filtered articles, using mock data');
+    }
+  });
+
+  // Fetch leaderboard data
+  const { data: leaderboard, isLoading: isLeaderboardLoading } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: () => fetchLeaderboard(3),
+    onError: () => {
+      console.error('Failed to fetch leaderboard, using mock data');
+    }
+  });
+
+  // Use filtered articles if a category is selected, otherwise use personalized articles
+  const displayedArticles = selectedCategory 
+    ? (filteredArticles || mockArticles.filter(a => a.category === selectedCategory))
+    : (personalizedArticles || mockArticles);
+
+  // Use trending articles from API or fallback to mock data
+  const displayedTrendingArticles = trendingArticles || mockArticles.slice(0, 3);
+
   return (
     <div className="space-y-8 pb-20">
       {/* Hero Section */}
@@ -104,35 +152,51 @@ export default function HomePage() {
         </div>
         <div className="overflow-x-auto pb-4">
           <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-            {featuredArticles.map(article => (
-              <div key={article.id} className="w-72 flex-shrink-0">
-                <Link to={`/article/${article.id}`} className="block">
-                  <Card className="h-full hover:shadow-md transition-shadow">
-                    <div className="w-full h-36 overflow-hidden">
-                      <img 
-                        src={article.imageUrl || "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb"} 
-                        alt={article.title}
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
+            {isTrendingLoading ? (
+              // Loading skeleton
+              Array(3).fill(0).map((_, idx) => (
+                <div key={idx} className="w-72 flex-shrink-0">
+                  <Card className="h-full">
+                    <div className="w-full h-36 bg-muted animate-pulse"></div>
                     <CardHeader className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
-                          {article.difficultyLevel}
-                        </span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock size={12} /> {article.readTime} min
-                        </span>
-                      </div>
-                      <CardTitle className="text-base line-clamp-2">{article.title}</CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm">
-                        {article.summary}
-                      </CardDescription>
+                      <div className="h-4 w-1/4 bg-muted animate-pulse mb-2"></div>
+                      <div className="h-5 bg-muted animate-pulse"></div>
+                      <div className="h-4 bg-muted animate-pulse mt-2"></div>
                     </CardHeader>
                   </Card>
-                </Link>
-              </div>
-            ))}
+                </div>
+              ))
+            ) : (
+              displayedTrendingArticles.map((article: Article) => (
+                <div key={article.id} className="w-72 flex-shrink-0">
+                  <Link to={`/article/${article.id}`} className="block">
+                    <Card className="h-full hover:shadow-md transition-shadow">
+                      <div className="w-full h-36 overflow-hidden">
+                        <img 
+                          src={article.imageUrl || "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb"} 
+                          alt={article.title}
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <CardHeader className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
+                            {article.difficultyLevel}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock size={12} /> {article.readTime} min
+                          </span>
+                        </div>
+                        <CardTitle className="text-base line-clamp-2">{article.title}</CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm">
+                          {article.summary}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -149,26 +213,41 @@ export default function HomePage() {
             <CardDescription>See who's leading this week</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: "Alex Johnson", score: 2840, rank: 1 },
-                { name: "Taylor Smith", score: 2620, rank: 2 },
-                { name: "Jordan Lee", score: 2420, rank: 3 }
-              ].map((user, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center 
-                      ${idx === 0 ? 'bg-yellow-500/20 text-yellow-600' : 
-                        idx === 1 ? 'bg-gray-300/30 text-gray-600' : 
-                          'bg-amber-600/20 text-amber-700'}`}>
-                      {user.rank}
-                    </span>
-                    <span>{user.name}</span>
+            {isLeaderboardLoading ? (
+              // Loading skeleton
+              <div className="space-y-3">
+                {Array(3).fill(0).map((_, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-muted animate-pulse"></span>
+                      <div className="h-4 w-24 bg-muted animate-pulse"></div>
+                    </div>
+                    <div className="h-4 w-16 bg-muted animate-pulse"></div>
                   </div>
-                  <span className="font-semibold">{user.score} pts</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(leaderboard || [
+                  { id: '1', username: "Alex Johnson", points: 2840 },
+                  { id: '2', username: "Taylor Smith", points: 2620 },
+                  { id: '3', username: "Jordan Lee", points: 2420 }
+                ]).map((user, idx) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center 
+                        ${idx === 0 ? 'bg-yellow-500/20 text-yellow-600' : 
+                          idx === 1 ? 'bg-gray-300/30 text-gray-600' : 
+                            'bg-amber-600/20 text-amber-700'}`}>
+                        {idx + 1}
+                      </span>
+                      <span>{user.username}</span>
+                    </div>
+                    <span className="font-semibold">{user.points} pts</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="mt-4 text-center">
               <Button variant="outline" asChild>
                 <Link to="/achievements">View Full Leaderboard</Link>
@@ -185,11 +264,27 @@ export default function HomePage() {
           onSelectCategory={handleCategorySelect} 
           selectedCategory={selectedCategory} 
         />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArticles.map(article => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {isFilteredLoading || isPersonalizedLoading ? (
+          // Loading skeleton grid
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array(6).fill(0).map((_, idx) => (
+              <Card key={idx} className="overflow-hidden">
+                <div className="h-40 bg-muted animate-pulse"></div>
+                <div className="p-3">
+                  <div className="h-5 bg-muted animate-pulse mb-2"></div>
+                  <div className="h-4 bg-muted animate-pulse mb-2"></div>
+                  <div className="h-4 bg-muted animate-pulse w-3/4"></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {displayedArticles.map((article: Article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
