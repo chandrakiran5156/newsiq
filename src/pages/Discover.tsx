@@ -1,16 +1,28 @@
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, TrendingUp, Filter } from 'lucide-react';
+import { Search, Filter, ArrowUp, ArrowDown } from 'lucide-react';
 import ArticleCard from '@/components/articles/ArticleCard';
-import { Article, Category } from '@/types';
-import { fetchArticles, fetchTrendingArticles, fetchArticlesByUserPreference } from '@/lib/api';
+import { Article, Category, DifficultyLevel } from '@/types';
+import { fetchArticles, fetchArticlesByUserPreference } from '@/lib/api';
 import { useAuth } from '@/lib/supabase-auth';
 import { useSearchParams } from 'react-router-dom';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 // Define categories with their icons
 const categories: { id: Category; name: string; icon: string }[] = [
@@ -25,6 +37,8 @@ const categories: { id: Category; name: string; icon: string }[] = [
   { id: 'education', name: 'Education', icon: '📚' },
 ];
 
+const difficultyLevels: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced'];
+
 export default function Discover() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -32,14 +46,16 @@ export default function Discover() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState('newest');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
   const ITEMS_PER_PAGE = 12;
   
   // Get category from URL if present
   useEffect(() => {
     const categoryFromURL = searchParams.get('category') as Category | null;
     if (categoryFromURL) {
-      // If there's a category in the URL, you might want to set initial filter state
-      // or perform a search based on this category
+      setSelectedCategory(categoryFromURL);
     }
   }, [searchParams]);
   
@@ -51,29 +67,26 @@ export default function Discover() {
     
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm, selectedCategory, selectedDifficulty, sortBy]);
   
   // Fetch all articles with search filter and pagination
   const { data: allArticles = [], isLoading: isAllLoading, isFetching: isAllFetching } = useQuery({
-    queryKey: ['articles', 'all', debouncedSearchTerm, page],
+    queryKey: ['articles', 'all', debouncedSearchTerm, page, sortBy, selectedCategory, selectedDifficulty],
     queryFn: () => fetchArticles({ 
       search: debouncedSearchTerm, 
+      category: selectedCategory,
+      difficultyLevel: selectedDifficulty,
       limit: ITEMS_PER_PAGE,
-      offset: (page - 1) * ITEMS_PER_PAGE 
+      offset: (page - 1) * ITEMS_PER_PAGE,
+      sortBy,
     }),
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch articles:', error);
-      }
-    }
-  });
-  
-  // Fetch trending articles
-  const { data: trendingArticles = [], isLoading: isTrendingLoading } = useQuery({
-    queryKey: ['articles', 'trending'],
-    queryFn: () => fetchTrendingArticles(12),
-    meta: {
-      onError: (error: Error) => {
-        console.error('Failed to fetch trending articles:', error);
       }
     }
   });
@@ -93,8 +106,6 @@ export default function Discover() {
   // Get articles based on selected tab and search results
   const getDisplayArticles = (): Article[] => {
     switch(selectedTab) {
-      case 'trending':
-        return trendingArticles;
       case 'recommended':
         return recommendedArticles;
       default:
@@ -105,13 +116,38 @@ export default function Discover() {
   const displayArticles = getDisplayArticles();
   
   // Get loading state based on selected tab
-  const isLoading = selectedTab === 'trending' 
-    ? isTrendingLoading 
-    : selectedTab === 'recommended' 
-    ? isRecommendedLoading 
-    : isAllLoading;
-
+  const isLoading = selectedTab === 'recommended' ? isRecommendedLoading : isAllLoading;
   const isFetching = selectedTab === 'all' && isAllFetching;
+
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+  };
+
+  // Handle category filter
+  const handleCategoryChange = (categoryId: Category | null) => {
+    setSelectedCategory(categoryId);
+    if (categoryId) {
+      setSearchParams({ category: categoryId });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  // Handle difficulty filter
+  const handleDifficultyChange = (difficulty: DifficultyLevel | null) => {
+    setSelectedDifficulty(difficulty);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+    setSelectedCategory(null);
+    setSelectedDifficulty(null);
+    setSortBy('newest');
+    setSearchParams({});
+  };
 
   return (
     <div className="space-y-6">
@@ -136,33 +172,25 @@ export default function Discover() {
         {/* Topics Grid */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Trending Topics
+            <Filter className="h-5 w-5 text-primary" />
+            Categories
           </h2>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {categories.map((category) => (
               <Button 
                 key={category.id} 
-                variant="outline" 
+                variant={selectedCategory === category.id ? "default" : "outline"}
                 className="h-auto py-3 justify-start text-left"
-                onClick={() => {
-                  setSearchParams({ category: category.id });
-                  setSelectedTab('all');
-                  setPage(1); // Reset page on category change
-                }}
+                onClick={() => handleCategoryChange(category.id)}
               >
                 <span className="mr-2">{category.icon}</span> {category.name}
               </Button>
             ))}
             <Button 
-              variant="outline" 
-              className="h-auto py-3 justify-start text-left bg-primary/5 border-primary/20"
-              onClick={() => {
-                setSearchParams({});
-                setSelectedTab('all');
-                setPage(1); // Reset page on viewing all
-              }}
+              variant={!selectedCategory ? "default" : "outline"} 
+              className="h-auto py-3 justify-start text-left"
+              onClick={() => handleCategoryChange(null)}
             >
               View All
             </Button>
@@ -174,19 +202,71 @@ export default function Discover() {
           setSelectedTab(value);
           setPage(1); // Reset page on tab change
         }}>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="trending">Trending</TabsTrigger>
               <TabsTrigger value="recommended">For You</TabsTrigger>
             </TabsList>
             
-            <Button variant="ghost" size="sm">
-              <Filter className="h-4 w-4 mr-2" /> Filter
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">
+                    <div className="flex items-center gap-2">
+                      <ArrowDown className="h-4 w-4" /> Newest first
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="oldest">
+                    <div className="flex items-center gap-2">
+                      <ArrowUp className="h-4 w-4" /> Oldest first
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="most-read">
+                    <div className="flex items-center gap-2">
+                      <ArrowDown className="h-4 w-4" /> Most read
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-10">
+                    <Filter className="h-4 w-4 mr-2" /> Filter
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72">
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Filters</h3>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Difficulty</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {difficultyLevels.map((level) => (
+                          <Button
+                            key={level}
+                            size="sm"
+                            variant={selectedDifficulty === level ? "default" : "outline"}
+                            onClick={() => handleDifficultyChange(selectedDifficulty === level ? null : level)}
+                            className="text-xs"
+                          >
+                            {level.charAt(0).toUpperCase() + level.slice(1)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Button variant="ghost" onClick={clearFilters} className="w-full">Clear filters</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           
-          {['all', 'trending', 'recommended'].map(tabValue => (
+          {['all', 'recommended'].map(tabValue => (
             <TabsContent key={tabValue} value={tabValue} className="mt-0">
               {isLoading ? (
                 // Loading skeleton grid

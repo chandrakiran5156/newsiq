@@ -15,20 +15,35 @@ export async function fetchArticles({
   category = null,
   difficultyLevel = null,
   search = '',
+  sortBy = 'newest',
 }: {
   limit?: number;
   offset?: number;
   category?: Category | null;
   difficultyLevel?: DifficultyLevel | null;
   search?: string;
+  sortBy?: string;
 }) {
   try {
-    console.log('Fetching articles with params:', { limit, offset, category, difficultyLevel, search });
+    console.log('Fetching articles with params:', { limit, offset, category, difficultyLevel, search, sortBy });
     
     let query = supabase
       .from('articles')
-      .select('*')
-      .order('published_at', { ascending: false });
+      .select('*');
+    
+    // Apply sort order
+    switch (sortBy) {
+      case 'oldest':
+        query = query.order('published_at', { ascending: true });
+        break;
+      case 'most-read':
+        query = query.order('views_count', { ascending: false });
+        break;
+      case 'newest':
+      default:
+        query = query.order('published_at', { ascending: false });
+        break;
+    }
 
     if (limit) {
       query = query.limit(limit);

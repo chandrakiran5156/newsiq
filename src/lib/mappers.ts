@@ -1,4 +1,3 @@
-
 import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -17,6 +16,7 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
     difficultyLevel: dbArticle.difficulty_level as DifficultyLevel,
     readTime: dbArticle.read_time,
     tags: dbArticle.tags || [],
+    viewsCount: dbArticle.views_count || 0,
   };
 }
 
