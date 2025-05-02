@@ -44,6 +44,7 @@ export interface Article {
   difficultyLevel: DifficultyLevel;
   readTime: number; // in minutes
   tags: string[];
+  viewsCount?: number; // Add this to fix the type error
 }
 
 export interface UserArticleInteraction {
