@@ -71,7 +71,7 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// New interface for the quiz format coming from n8n
+// Updated N8n quiz format to match what's coming from n8n
 export interface N8nQuizQuestion {
   question_number: number;
   question_text: string;
@@ -80,6 +80,9 @@ export interface N8nQuizQuestion {
   };
   correct_answer: string;
   explanation: string;
+  article_id?: string;
+  quiz_id?: string;
+  quiz_title?: string;
 }
 
 export interface QuizAttempt {

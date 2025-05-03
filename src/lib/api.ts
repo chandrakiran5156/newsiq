@@ -336,8 +336,13 @@ export async function fetchQuizByArticleId(articleId: string) {
       return null;
     }
 
-    console.log('Quiz fetched successfully');
-    return mapDbQuizToQuiz(data);
+    console.log('Raw quiz data fetched:', data);
+    
+    // Transform the quiz data
+    const transformedQuiz = mapDbQuizToQuiz(data);
+    console.log('Quiz fetched and transformed:', transformedQuiz);
+    
+    return transformedQuiz;
   } catch (err) {
     console.error('Error in fetchQuizByArticleId:', err);
     throw err;

@@ -18,7 +18,7 @@ import { fetchArticleById, fetchQuizByArticleId, submitQuizAttempt } from '@/lib
 import { QuizQuestion } from '@/types';
 
 export default function QuizPage() {
-  const { id } = useParams<{ id: string }>();
+  const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -31,9 +31,9 @@ export default function QuizPage() {
 
   // Fetch article
   const { data: article, isLoading: isArticleLoading } = useQuery({
-    queryKey: ['article', id],
-    queryFn: () => id ? fetchArticleById(id) : Promise.reject('No article ID'),
-    enabled: !!id,
+    queryKey: ['article', articleId],
+    queryFn: () => articleId ? fetchArticleById(articleId) : Promise.reject('No article ID'),
+    enabled: !!articleId,
     meta: {
       onError: (error: Error) => {
         console.error('Failed to fetch article:', error);
@@ -48,9 +48,9 @@ export default function QuizPage() {
 
   // Fetch quiz with improved error handling
   const { data: quiz, isLoading: isQuizLoading } = useQuery({
-    queryKey: ['quiz', id],
-    queryFn: () => id ? fetchQuizByArticleId(id) : Promise.reject('No article ID'),
-    enabled: !!id,
+    queryKey: ['quiz', articleId],
+    queryFn: () => articleId ? fetchQuizByArticleId(articleId) : Promise.reject('No article ID'),
+    enabled: !!articleId,
     staleTime: 300000, // Cache quiz data for 5 minutes
     meta: {
       onError: (error: Error) => {
@@ -89,6 +89,7 @@ export default function QuizPage() {
     if (!quiz) return [];
     
     // The mapping is now handled in mapDbQuizToQuiz
+    console.log('Quiz questions from quiz object:', quiz.questions);
     return quiz.questions || [];
   };
 
@@ -159,7 +160,9 @@ export default function QuizPage() {
       console.log('Quiz data loaded:', quiz);
       console.log('Transformed questions:', questions);
     }
-  }, [quiz, questions]);
+    
+    console.log('Current article ID:', articleId);
+  }, [quiz, questions, articleId]);
 
   if (isArticleLoading || isQuizLoading) {
     return (
@@ -178,9 +181,12 @@ export default function QuizPage() {
         <p className="text-muted-foreground mb-6">
           The quiz you're looking for doesn't exist or has no questions.
           {quiz && <span> Debug info: quiz found but no valid questions parsed.</span>}
+          {!articleId && <span> No article ID provided.</span>}
+          <br />
+          <span className="text-sm">Article ID: {articleId}</span>
         </p>
         <Button asChild>
-          <Link to={id ? `/article/${id}` : '/discover'}>Back to Article</Link>
+          <Link to={articleId ? `/article/${articleId}` : '/discover'}>Back to Article</Link>
         </Button>
       </div>
     );
@@ -191,7 +197,7 @@ export default function QuizPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          to={`/article/${id}`}
+          to={`/article/${articleId}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft size={16} className="mr-1" /> Back to article

@@ -41,6 +41,7 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
 // Map database quiz to frontend Quiz type
 export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
   try {
+    console.log('Raw quiz data from DB:', dbQuiz);
     let questions = [];
     
     // Handle the case where questions is a string (JSON)
@@ -64,8 +65,10 @@ export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
       }
     }
     
+    console.log('Extracted questions before transformation:', questions);
+    
     // Transform the new format to match our frontend Quiz type
-    const transformedQuestions = questions.map(q => {
+    const transformedQuestions = Array.isArray(questions) ? questions.map(q => {
       // Check if we have the new format with question_number, question_text, etc.
       if (q.question_text) {
         const options = Object.values(q.options || {});
@@ -89,18 +92,23 @@ export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
       
       // Return the original format if it doesn't match the new format
       return q;
-    });
+    }) : [];
+    
+    console.log('Transformed questions:', transformedQuestions);
 
+    // Make sure we're associating the quiz with the correct article ID
+    const articleId = dbQuiz.article_id;
+    
     return {
       id: dbQuiz.id,
-      articleId: dbQuiz.article_id,
+      articleId: articleId,
       questions: transformedQuestions
     };
   } catch (error) {
-    console.error('Error mapping quiz data:', error);
+    console.error('Error mapping quiz data:', error, dbQuiz);
     return {
-      id: dbQuiz.id,
-      articleId: dbQuiz.article_id,
+      id: dbQuiz.id || 'unknown',
+      articleId: dbQuiz.article_id || 'unknown',
       questions: []
     };
   }
