@@ -3,12 +3,29 @@ import { Json } from "@/integrations/supabase/types";
 
 // Map database article to frontend Article type
 export function mapDbArticleToArticle(dbArticle: any): Article {
+  // Handle source field that could be either a string (JSON or plain text) or an object
+  let source;
+  if (typeof dbArticle.source === 'string') {
+    try {
+      source = JSON.parse(dbArticle.source);
+    } catch (e) {
+      // If parsing fails, create a source object with the string as name
+      source = { 
+        name: dbArticle.source, 
+        url: '' 
+      };
+    }
+  } else {
+    // Already an object
+    source = dbArticle.source;
+  }
+
   return {
     id: dbArticle.id,
     title: dbArticle.title,
     summary: dbArticle.summary,
     content: dbArticle.content,
-    source: typeof dbArticle.source === 'string' ? JSON.parse(dbArticle.source) : dbArticle.source,
+    source: source,
     publishedAt: dbArticle.published_at,
     author: dbArticle.author,
     category: dbArticle.category as Category,
