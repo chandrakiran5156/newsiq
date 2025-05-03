@@ -47,7 +47,7 @@ export type Database = {
           image_url: string | null
           published_at: string
           read_time: number
-          source: Json
+          source: string
           summary: string
           tags: string[] | null
           title: string
@@ -63,7 +63,7 @@ export type Database = {
           image_url?: string | null
           published_at: string
           read_time: number
-          source: Json
+          source: string
           summary: string
           tags?: string[] | null
           title: string
@@ -79,7 +79,7 @@ export type Database = {
           image_url?: string | null
           published_at?: string
           read_time?: number
-          source?: Json
+          source?: string
           summary?: string
           tags?: string[] | null
           title?: string

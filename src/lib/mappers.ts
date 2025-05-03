@@ -1,3 +1,4 @@
+
 import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -63,10 +64,37 @@ export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
       }
     }
     
+    // Transform the new format to match our frontend Quiz type
+    const transformedQuestions = questions.map(q => {
+      // Check if we have the new format with question_number, question_text, etc.
+      if (q.question_text) {
+        const options = Object.values(q.options || {});
+        
+        // Find the index of the correct option
+        let correctOptionIndex = 0;
+        const correctAnswer = q.correct_answer;
+        const optionKeys = Object.keys(q.options || {});
+        correctOptionIndex = optionKeys.findIndex(key => key === correctAnswer);
+        
+        if (correctOptionIndex === -1) correctOptionIndex = 0;
+        
+        return {
+          id: q.question_number.toString(),
+          question: q.question_text,
+          options: options,
+          correctOptionIndex: correctOptionIndex,
+          explanation: q.explanation || ""
+        };
+      }
+      
+      // Return the original format if it doesn't match the new format
+      return q;
+    });
+
     return {
       id: dbQuiz.id,
       articleId: dbQuiz.article_id,
-      questions: questions
+      questions: transformedQuestions
     };
   } catch (error) {
     console.error('Error mapping quiz data:', error);

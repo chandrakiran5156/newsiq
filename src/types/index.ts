@@ -71,6 +71,17 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+// New interface for the quiz format coming from n8n
+export interface N8nQuizQuestion {
+  question_number: number;
+  question_text: string;
+  options: {
+    [key: string]: string;
+  };
+  correct_answer: string;
+  explanation: string;
+}
+
 export interface QuizAttempt {
   id: string;
   userId: string;

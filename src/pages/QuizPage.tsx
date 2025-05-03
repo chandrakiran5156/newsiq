@@ -84,26 +84,12 @@ export default function QuizPage() {
     },
   });
 
-  // Parse JSON questions if needed
+  // Get the parsed and transformed questions
   const getQuizQuestions = () => {
     if (!quiz) return [];
     
-    // Check if questions is a JSON string that needs parsing
-    if (quiz.questions && typeof quiz.questions === 'string') {
-      try {
-        return JSON.parse(quiz.questions);
-      } catch (e) {
-        console.error('Failed to parse quiz questions:', e);
-        return [];
-      }
-    }
-    
-    // Handle case where questions is already an array
-    if (Array.isArray(quiz.questions)) {
-      return quiz.questions;
-    }
-    
-    return [];
+    // The mapping is now handled in mapDbQuizToQuiz
+    return quiz.questions || [];
   };
 
   const questions = getQuizQuestions();
@@ -167,6 +153,14 @@ export default function QuizPage() {
     setQuizFinished(false);
   };
 
+  // Debug logs to help troubleshoot
+  useEffect(() => {
+    if (quiz) {
+      console.log('Quiz data loaded:', quiz);
+      console.log('Transformed questions:', questions);
+    }
+  }, [quiz, questions]);
+
   if (isArticleLoading || isQuizLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh]">
@@ -183,6 +177,7 @@ export default function QuizPage() {
         <h2 className="text-2xl font-bold mb-2">Quiz not found</h2>
         <p className="text-muted-foreground mb-6">
           The quiz you're looking for doesn't exist or has no questions.
+          {quiz && <span> Debug info: quiz found but no valid questions parsed.</span>}
         </p>
         <Button asChild>
           <Link to={id ? `/article/${id}` : '/discover'}>Back to Article</Link>
