@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,9 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signIn, signUp, isAuthenticated, isLoading } = useAuth();
+
+  // Get the current URL for redirect
+  const currentOrigin = window.location.origin;
 
   // Redirect if user is already logged in
   if (isAuthenticated && !isLoading) {
@@ -29,7 +31,8 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
-    await signIn('google');
+    // Pass the current origin as redirectTo
+    await signIn('google', { redirectTo: `${currentOrigin}/home` });
   };
 
   return (

@@ -21,11 +21,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Get the current URL for redirect fallback
+  const currentOrigin = window.location.origin;
 
   useEffect(() => {
     // Set up listener for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.email);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
@@ -34,6 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Current session check:', currentSession?.user?.email || 'No session');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -47,10 +52,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       
       if (provider === 'google') {
+        const redirectTo = options?.redirectTo || `${currentOrigin}/home`;
+        console.log('Google sign in with redirect to:', redirectTo);
+        
         await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/home`,
+            redirectTo,
             queryParams: {
               access_type: 'offline',
               prompt: 'consent'

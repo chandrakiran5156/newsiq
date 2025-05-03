@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
@@ -50,7 +49,7 @@ export default function Discover() {
   const [sortBy, setSortBy] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
-  const ITEMS_PER_PAGE = 100; // Increased from 12 to 100 to show more articles at once
+  const ITEMS_PER_PAGE = 200; // Increased to show all articles
   
   // Get category from URL if present
   useEffect(() => {
@@ -159,11 +158,14 @@ export default function Discover() {
 
   // Log for debugging
   useEffect(() => {
+    if (error) {
+      console.error('Error details:', error);
+    }
     console.log('All articles count:', allArticles?.length);
     if (allArticles?.length > 0) {
       console.log('Sample article:', allArticles[0]);
     }
-  }, [allArticles]);
+  }, [allArticles, error]);
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Article, UserArticleInteraction, Quiz, Category, DifficultyLevel } from '@/types';
 import { 
@@ -9,7 +10,7 @@ import {
 
 // Article API
 export async function fetchArticles({
-  limit = 100, // Increased default limit to 100
+  limit = 200, // Increased default limit to show all articles
   offset = 0,
   category = null,
   difficultyLevel = null,
@@ -44,11 +45,11 @@ export async function fetchArticles({
         break;
     }
 
-    if (limit) {
+    if (limit > 0) {
       query = query.limit(limit);
     }
 
-    if (offset) {
+    if (offset > 0) {
       query = query.range(offset, offset + limit - 1);
     }
 
@@ -71,7 +72,7 @@ export async function fetchArticles({
       throw new Error(error.message);
     }
 
-    console.log(`Fetched ${data?.length || 0} articles`);
+    console.log(`Successfully fetched ${data?.length || 0} articles`);
     return mapArray(data || [], mapDbArticleToArticle);
   } catch (err) {
     console.error('Error in fetchArticles:', err);
