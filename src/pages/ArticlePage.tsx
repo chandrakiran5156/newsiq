@@ -1,3 +1,4 @@
+
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction } from '@/lib/api';
 import { categories } from '@/data/mockData'; // Only using for category data
 import { useAuth } from '@/lib/supabase-auth';
+import ArticleChatPanel from '@/components/article-chat/ArticleChatPanel';
 
 export default function ArticlePage() {
   const { id } = useParams<{ id: string }>();
@@ -272,6 +274,9 @@ export default function ArticlePage() {
           </div>
         </div>
       </div>
+
+      {/* Chat Panel */}
+      {article && <ArticleChatPanel article={article} />}
     </div>
   );
 }

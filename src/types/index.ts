@@ -44,7 +44,7 @@ export interface Article {
   difficultyLevel: DifficultyLevel;
   readTime: number; // in minutes
   tags: string[];
-  viewsCount?: number; // Add this to fix the type error
+  viewsCount?: number;
 }
 
 export interface UserArticleInteraction {
@@ -71,7 +71,7 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// Updated N8n quiz format to match what's coming from n8n
+// N8n quiz format to match what's coming from n8n
 export interface N8nQuizQuestion {
   question_number: number;
   question_text: string;
@@ -112,10 +112,10 @@ export interface UserAchievement {
   userId: string;
   achievementId: string;
   earnedAt: string;
-  achievement?: Achievement; // Add this property to connect to the Achievement
+  achievement?: Achievement;
 }
 
-// Add a profile interface that includes the leaderboard stats
+// Profile interface that includes the leaderboard stats
 export interface UserProfile {
   id: string;
   username?: string;
@@ -127,4 +127,27 @@ export interface UserProfile {
   quizzes_taken?: number;
   avg_quiz_score?: number;
   current_streak?: number;
+}
+
+// Chat interfaces for article chat feature
+export interface ChatSession {
+  id: string;
+  userId: string;
+  articleId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  message: string;
+  role: 'user' | 'assistant';
+  createdAt: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  error?: string;
 }
