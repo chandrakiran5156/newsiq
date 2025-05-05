@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Import Supabase JS client - using a specific import that's compatible with Deno
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f";
+const N8N_WEBHOOK_BASE_URL = "https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f";
 const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
 // Add service role key for bypassing RLS
@@ -103,17 +103,20 @@ serve(async (req) => {
         content: articleData.content,
         summary: articleData.summary
       },
-      chatHistory
+      chatHistory,
+      sessionId // Add sessionId to the payload
     };
 
-    console.log('Sending request to n8n webhook:', N8N_WEBHOOK_URL);
+    // Construct webhook URL with session ID as query parameter
+    const webhookUrl = `${N8N_WEBHOOK_BASE_URL}?sessionId=${sessionId}`;
+    console.log('Sending request to n8n webhook:', webhookUrl);
     
     let assistantMessage;
     let n8nResponseStatus = 0;
     
     try {
-      // Send request to n8n webhook
-      const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+      // Send request to n8n webhook with session ID included
+      const n8nResponse = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
