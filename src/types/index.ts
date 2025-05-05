@@ -71,14 +71,14 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// N8n quiz format to match what's coming from n8n
+// Updated N8nQuizQuestion format to match the new structure
 export interface N8nQuizQuestion {
   question_number: number;
   question_text: string;
   options: {
-    [key: string]: string;
+    [key: string]: string;  // Keys like "A", "B", "C", "D"
   };
-  correct_answer: string;
+  correct_answer: string;   // Letter like "A", "B", "C", "D"
   explanation: string;
   article_id?: string;
   quiz_id?: string;

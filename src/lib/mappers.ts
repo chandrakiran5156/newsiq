@@ -1,4 +1,3 @@
-
 import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -38,7 +37,7 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
   };
 }
 
-// Map database quiz to frontend Quiz type
+// Updated mapper function to handle the new quiz question format
 export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
   try {
     console.log('Raw quiz data from DB:', dbQuiz);
@@ -67,25 +66,24 @@ export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
     
     console.log('Extracted questions before transformation:', questions);
     
-    // Transform the new format to match our frontend Quiz type
+    // Transform the questions to match our frontend Quiz type
     const transformedQuestions = Array.isArray(questions) ? questions.map(q => {
       // Check if we have the new format with question_number, question_text, etc.
       if (q.question_text) {
-        const options = Object.values(q.options || {});
+        // Get options as an array while preserving order from A, B, C, D...
+        const optionsObj = q.options || {};
+        const optionKeys = Object.keys(optionsObj).sort();
+        const options = optionKeys.map(key => optionsObj[key]);
         
-        // Find the index of the correct option
-        let correctOptionIndex = 0;
+        // Find the index of the correct option based on the letter answer
         const correctAnswer = q.correct_answer;
-        const optionKeys = Object.keys(q.options || {});
-        correctOptionIndex = optionKeys.findIndex(key => key === correctAnswer);
-        
-        if (correctOptionIndex === -1) correctOptionIndex = 0;
+        const correctOptionIndex = optionKeys.indexOf(correctAnswer);
         
         return {
           id: q.question_number.toString(),
           question: q.question_text,
           options: options,
-          correctOptionIndex: correctOptionIndex,
+          correctOptionIndex: correctOptionIndex >= 0 ? correctOptionIndex : 0,
           explanation: q.explanation || ""
         };
       }
