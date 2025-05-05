@@ -19,6 +19,9 @@ export function useArticleChat(articleId: string, articleTitle: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
+  
+  // Track processed message IDs to prevent duplicate rendering
+  const [processedMessageIds, setProcessedMessageIds] = useState<Set<string>>(new Set());
 
   // Initialize the chat session
   useEffect(() => {
@@ -39,6 +42,11 @@ export function useArticleChat(articleId: string, articleTitle: string) {
         
         // Get existing messages
         const existingMessages = await getChatMessages(chatSession.id);
+        
+        // Track processed message IDs
+        const messageIds = new Set(existingMessages.map(msg => msg.id));
+        setProcessedMessageIds(messageIds);
+        
         setMessages(existingMessages);
       } catch (err: any) {
         console.error('Failed to initialize chat:', err);
@@ -64,14 +72,22 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     const unsubscribe = subscribeToMessages(session.id, (newMessage) => {
       setMessages(prev => {
         // Check if message already exists to avoid duplicates
-        const exists = prev.some(msg => msg.id === newMessage.id);
+        const exists = processedMessageIds.has(newMessage.id);
         if (exists) return prev;
+        
+        // Add message ID to processed set
+        setProcessedMessageIds(prevIds => {
+          const newIds = new Set(prevIds);
+          newIds.add(newMessage.id);
+          return newIds;
+        });
+        
         return [...prev, newMessage];
       });
     });
     
     return unsubscribe;
-  }, [session?.id]);
+  }, [session?.id, processedMessageIds]);
 
   // Handle message sending with retry logic
   const handleSendMessage = useCallback(async (message: string) => {
@@ -81,18 +97,8 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     setError(null);
     
     try {
-      // Add optimistic user message to UI immediately
-      const optimisticUserMsg: ChatMessage = {
-        id: `temp-${Date.now()}`,
-        sessionId: session.id,
-        message: message,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      };
-      
-      setMessages(prev => [...prev, optimisticUserMsg]);
-      
-      // Send message to API
+      // Send message to API without adding optimistic messages
+      // The real messages will come through the subscription
       await sendMessage(
         message,
         articleId,
@@ -109,7 +115,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
       const errorMessage = err.message || 'Failed to send message';
       setError(errorMessage);
       
-      // Add error message to chat if not from n8n
+      // Add error message to chat if retried multiple times
       if (retryCount >= 2) {
         const errorMsg: ChatMessage = {
           id: `error-${Date.now()}`,
@@ -145,6 +151,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     setMessages([]);
     setError(null);
     setRetryCount(0);
+    setProcessedMessageIds(new Set());
     
     try {
       const chatSession = await getOrCreateChatSession(

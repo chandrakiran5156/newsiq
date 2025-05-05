@@ -61,6 +61,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     
     if (inputMessage.trim() === '') return;
     
+    // Remove optimistic rendering since messages are now handled by the API
     sendMessage(inputMessage);
     setInputMessage('');
   };
@@ -86,8 +87,14 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     createdAt: new Date().toISOString()
   };
   
-  // Display welcome message if no other messages exist
-  const displayMessages = messages.length > 0 ? messages : [welcomeMessage];
+  // Filter out duplicate messages by checking consecutive messages with the same role and content
+  const filteredMessages = messages.length > 0 ? 
+    messages.filter((message, index, array) => {
+      if (index === 0) return true;
+      const prevMessage = array[index - 1];
+      return !(message.role === prevMessage.role && message.message === prevMessage.message);
+    }) : 
+    [welcomeMessage];
   
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
@@ -130,7 +137,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
                   <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
                 </div>
               ) : (
-                displayMessages.map((message) => (
+                filteredMessages.map((message) => (
                   <ChatMessage
                     key={message.id}
                     message={message}
