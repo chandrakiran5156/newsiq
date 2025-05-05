@@ -1,3 +1,4 @@
+
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -70,7 +71,7 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// Updated N8n quiz format to match what's coming from the AI Agent
+// N8n quiz format to match what's coming from n8n
 export interface N8nQuizQuestion {
   question_number: number;
   question_text: string;
