@@ -7,6 +7,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f";
 const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
+// Add service role key for bypassing RLS
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,8 +46,16 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client using the Deno-compatible approach
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log(`Processing request: userId=${userId}, articleId=${articleId}, sessionId=${sessionId}`);
+    
+    // Create Supabase client using service role to bypass RLS
+    const supabase = createClient(
+      SUPABASE_URL, 
+      SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY, // Fall back to anon key if service role key is not available
+      {
+        auth: { persistSession: false }
+      }
+    );
     
     // Fetch article content to provide context
     const { data: articleData, error: articleError } = await supabase
@@ -62,6 +72,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Successfully fetched article: ${articleData.title}`);
+
     // Get previous messages for context (limit to last 10 messages)
     const { data: previousMessages, error: messagesError } = await supabase
       .from('chat_messages')
@@ -73,6 +85,8 @@ serve(async (req) => {
     if (messagesError) {
       console.error('Error fetching previous messages:', messagesError);
       // Continue without previous messages
+    } else {
+      console.log(`Fetched ${previousMessages?.length || 0} previous messages`);
     }
 
     // Prepare chat history
@@ -95,7 +109,7 @@ serve(async (req) => {
     console.log('Sending request to n8n webhook:', N8N_WEBHOOK_URL);
     
     let assistantMessage;
-    let n8nResponseStatus = 200;
+    let n8nResponseStatus = 0;
     
     try {
       // Send request to n8n webhook
@@ -108,6 +122,7 @@ serve(async (req) => {
       });
       
       n8nResponseStatus = n8nResponse.status;
+      console.log(`n8n response status: ${n8nResponseStatus}`);
 
       if (!n8nResponse.ok) {
         const errorText = await n8nResponse.text();
@@ -119,6 +134,7 @@ serve(async (req) => {
         const responseData = await n8nResponse.json();
         assistantMessage = responseData.message || responseData.response || responseData.answer || 
           "I'm not sure how to respond to that.";
+        console.log('Received valid response from n8n');
       }
     } catch (error) {
       console.error('Error communicating with n8n:', error);
@@ -138,6 +154,8 @@ serve(async (req) => {
 
     if (userMsgError) {
       console.error('Error saving user message:', userMsgError);
+    } else {
+      console.log('Successfully saved user message to database');
     }
 
     // Save assistant message to database
@@ -151,6 +169,8 @@ serve(async (req) => {
 
     if (assistantMsgError) {
       console.error('Error saving assistant message:', assistantMsgError);
+    } else {
+      console.log('Successfully saved assistant message to database');
     }
 
     // Include n8n status in response for debugging
