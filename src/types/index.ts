@@ -1,4 +1,3 @@
-
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -60,6 +59,7 @@ export interface UserArticleInteraction {
 export interface Quiz {
   id: string;
   articleId: string;
+  title?: string;
   questions: QuizQuestion[];
 }
 
@@ -83,6 +83,19 @@ export interface N8nQuizQuestion {
   article_id?: string;
   quiz_id?: string;
   quiz_title?: string;
+}
+
+// New interface for the quiz_questions table
+export interface DbQuizQuestion {
+  id: string;
+  quiz_id: string;
+  article_id: string;
+  question_number: number;
+  question_text: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  explanation: string | null;
+  created_at?: string;
 }
 
 export interface QuizAttempt {

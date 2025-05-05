@@ -1,4 +1,4 @@
-import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
+import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement, DbQuizQuestion } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
 // Map database article to frontend Article type
@@ -37,69 +37,41 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
   };
 }
 
-// Updated mapper function to handle the new quiz question format
-export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
+// Updated mapper function to handle the new quiz question format from quiz_questions table
+export function mapDbQuizToQuiz(dbQuiz: any, dbQuizQuestions: DbQuizQuestion[] = []): Quiz {
   try {
     console.log('Raw quiz data from DB:', dbQuiz);
-    let questions = [];
+    console.log('Quiz questions from DB:', dbQuizQuestions);
     
-    // Handle the case where questions is a string (JSON)
-    if (dbQuiz.questions && typeof dbQuiz.questions === 'string') {
-      try {
-        questions = JSON.parse(dbQuiz.questions);
-      } catch (e) {
-        console.error('Failed to parse quiz questions:', e);
-        questions = [];
-      }
-    } 
-    // Handle the case where questions is already an object (JSONB from Postgres)
-    else if (dbQuiz.questions && typeof dbQuiz.questions === 'object') {
-      // If it's an array, use it directly
-      if (Array.isArray(dbQuiz.questions)) {
-        questions = dbQuiz.questions;
-      } 
-      // If it's a JSONB object from Postgres
-      else {
-        questions = dbQuiz.questions;
-      }
-    }
-    
-    console.log('Extracted questions before transformation:', questions);
+    // Sort questions by question number to ensure correct order
+    const sortedQuestions = [...dbQuizQuestions].sort((a, b) => a.question_number - b.question_number);
     
     // Transform the questions to match our frontend Quiz type
-    const transformedQuestions = Array.isArray(questions) ? questions.map(q => {
-      // Check if we have the new format with question_number, question_text, etc.
-      if (q.question_text) {
-        // Get options as an array while preserving order from A, B, C, D...
-        const optionsObj = q.options || {};
-        const optionKeys = Object.keys(optionsObj).sort();
-        const options = optionKeys.map(key => optionsObj[key]);
-        
-        // Find the index of the correct option based on the letter answer
-        const correctAnswer = q.correct_answer;
-        const correctOptionIndex = optionKeys.indexOf(correctAnswer);
-        
-        return {
-          id: q.question_number.toString(),
-          question: q.question_text,
-          options: options,
-          correctOptionIndex: correctOptionIndex >= 0 ? correctOptionIndex : 0,
-          explanation: q.explanation || ""
-        };
-      }
+    const transformedQuestions = sortedQuestions.map(q => {
+      // Get options as an array while preserving order from A, B, C, D...
+      const optionsObj = q.options || {};
+      const optionKeys = Object.keys(optionsObj).sort();
+      const options = optionKeys.map(key => optionsObj[key]);
       
-      // Return the original format if it doesn't match the new format
-      return q;
-    }) : [];
+      // Find the index of the correct option based on the letter answer
+      const correctAnswer = q.correct_answer;
+      const correctOptionIndex = optionKeys.indexOf(correctAnswer);
+      
+      return {
+        id: q.id,
+        question: q.question_text,
+        options: options,
+        correctOptionIndex: correctOptionIndex >= 0 ? correctOptionIndex : 0,
+        explanation: q.explanation || ""
+      };
+    });
     
     console.log('Transformed questions:', transformedQuestions);
-
-    // Make sure we're associating the quiz with the correct article ID
-    const articleId = dbQuiz.article_id;
     
     return {
       id: dbQuiz.id,
-      articleId: articleId,
+      articleId: dbQuiz.article_id,
+      title: dbQuiz.title,
       questions: transformedQuestions
     };
   } catch (error) {

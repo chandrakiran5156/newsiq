@@ -320,26 +320,39 @@ export async function fetchQuizByArticleId(articleId: string) {
   try {
     console.log('Fetching quiz for article:', articleId);
     
-    const { data, error } = await supabase
+    // First, get the quiz record for this article
+    const { data: quizData, error: quizError } = await supabase
       .from('quizzes')
       .select('*')
       .eq('article_id', articleId)
       .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching quiz:', error);
-      throw new Error(error.message);
+    if (quizError) {
+      console.error('Error fetching quiz:', quizError);
+      throw new Error(quizError.message);
     }
 
-    if (!data) {
+    if (!quizData) {
       console.log('No quiz found for article:', articleId);
       return null;
     }
-
-    console.log('Raw quiz data fetched:', data);
+    
+    // Now fetch the questions for this quiz
+    const { data: questionData, error: questionError } = await supabase
+      .from('quiz_questions')
+      .select('*')
+      .eq('article_id', articleId)
+      .order('question_number', { ascending: true });
+      
+    if (questionError) {
+      console.error('Error fetching quiz questions:', questionError);
+      throw new Error(questionError.message);
+    }
+    
+    console.log('Quiz questions fetched:', questionData);
     
     // Transform the quiz data
-    const transformedQuiz = mapDbQuizToQuiz(data);
+    const transformedQuiz = mapDbQuizToQuiz(quizData, questionData);
     console.log('Quiz fetched and transformed:', transformedQuiz);
     
     return transformedQuiz;
