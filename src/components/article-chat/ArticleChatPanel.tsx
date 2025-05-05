@@ -25,6 +25,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     messages,
     isLoading,
     isSending,
+    error,
     sendMessage,
     resetChat
   } = useArticleChat(article.id, article.title);
@@ -35,6 +36,17 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
   }, [messages, isOpen]);
+  
+  // Show toast for errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
   
   // Handle message sending
   const handleSendMessage = () => {

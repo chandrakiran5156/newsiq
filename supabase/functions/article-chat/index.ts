@@ -13,6 +13,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fallback response generator in case n8n webhook fails
+function generateFallbackResponse(articleContext: any, userMessage: string): string {
+  // Simple fallback to provide a meaningful response when n8n is unavailable
+  const articleTitle = articleContext?.title || 'this article';
+  
+  return `I'm sorry, I'm currently unable to process your request about "${articleTitle}" due to a technical issue. 
+  
+Here's what I can tell you:
+- Your question was: "${userMessage}"
+- This appears to be about "${articleTitle}"
+
+Please try again in a moment, or rephrase your question. Our team is working to restore full functionality as soon as possible.`;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -80,26 +94,38 @@ serve(async (req) => {
 
     console.log('Sending request to n8n webhook:', N8N_WEBHOOK_URL);
     
-    // Send request to n8n webhook
-    const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(n8nPayload),
-    });
+    let assistantMessage;
+    let n8nResponseStatus = 200;
+    
+    try {
+      // Send request to n8n webhook
+      const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(n8nPayload),
+      });
+      
+      n8nResponseStatus = n8nResponse.status;
 
-    if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text();
-      console.error('Error from n8n:', errorText);
-      return new Response(
-        JSON.stringify({ error: "Failed to get response from AI service" }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (!n8nResponse.ok) {
+        const errorText = await n8nResponse.text();
+        console.error(`Error from n8n (status ${n8nResponse.status}):`, errorText);
+        
+        // Use fallback response instead of failing
+        assistantMessage = generateFallbackResponse(articleData, userMessage);
+      } else {
+        const responseData = await n8nResponse.json();
+        assistantMessage = responseData.message || responseData.response || responseData.answer || 
+          "I'm not sure how to respond to that.";
+      }
+    } catch (error) {
+      console.error('Error communicating with n8n:', error);
+      
+      // Use fallback response for any network or other errors
+      assistantMessage = generateFallbackResponse(articleData, userMessage);
     }
-
-    const responseData = await n8nResponse.json();
-    const assistantMessage = responseData.message || responseData.response || responseData.answer || "I'm not sure how to respond to that.";
     
     // Save user message to database
     const { error: userMsgError } = await supabase
@@ -127,8 +153,12 @@ serve(async (req) => {
       console.error('Error saving assistant message:', assistantMsgError);
     }
 
+    // Include n8n status in response for debugging
     return new Response(
-      JSON.stringify({ message: assistantMessage }),
+      JSON.stringify({ 
+        message: assistantMessage, 
+        n8nStatus: n8nResponseStatus 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

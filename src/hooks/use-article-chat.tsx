@@ -18,6 +18,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   // Initialize the chat session
   useEffect(() => {
@@ -40,11 +41,12 @@ export function useArticleChat(articleId: string, articleTitle: string) {
         const existingMessages = await getChatMessages(chatSession.id);
         setMessages(existingMessages);
       } catch (err: any) {
+        console.error('Failed to initialize chat:', err);
         setError(err.message || 'Failed to initialize chat');
         toast({
-          title: 'Error',
-          description: 'Failed to load chat history',
-          variant: 'destructive'
+          title: "Error",
+          description: "Failed to load chat history",
+          variant: "destructive"
         });
       } finally {
         setIsLoading(false);
@@ -71,7 +73,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     return unsubscribe;
   }, [session?.id]);
 
-  // Handle message sending
+  // Handle message sending with retry logic
   const handleSendMessage = useCallback(async (message: string) => {
     if (!user?.id || !session?.id || !message.trim()) return;
     
@@ -79,23 +81,61 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     setError(null);
     
     try {
+      // Add optimistic user message to UI immediately
+      const optimisticUserMsg: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        sessionId: session.id,
+        message: message,
+        role: 'user',
+        createdAt: new Date().toISOString(),
+      };
+      
+      setMessages(prev => [...prev, optimisticUserMsg]);
+      
+      // Send message to API
       await sendMessage(
         message,
         articleId,
         user.id,
         session.id
       );
+      
+      // Reset retry count on success
+      setRetryCount(0);
     } catch (err: any) {
-      setError(err.message || 'Failed to send message');
+      console.error('Failed to send message:', err);
+      
+      // Set error state
+      const errorMessage = err.message || 'Failed to send message';
+      setError(errorMessage);
+      
+      // Add error message to chat if not from n8n
+      if (retryCount >= 2) {
+        const errorMsg: ChatMessage = {
+          id: `error-${Date.now()}`,
+          sessionId: session.id,
+          message: "Sorry, I'm having trouble connecting right now. Please try again later.",
+          role: 'assistant',
+          createdAt: new Date().toISOString(),
+        };
+        
+        setMessages(prev => [...prev, errorMsg]);
+        setRetryCount(0); // Reset after showing error to user
+      } else {
+        // Increment retry count
+        setRetryCount(prev => prev + 1);
+      }
+      
+      // Show toast notification
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setIsSending(false);
     }
-  }, [user?.id, session?.id, articleId, toast]);
+  }, [user?.id, session?.id, articleId, toast, retryCount]);
 
   // Reset chat state
   const resetChat = useCallback(async () => {
@@ -103,6 +143,8 @@ export function useArticleChat(articleId: string, articleTitle: string) {
     
     setIsLoading(true);
     setMessages([]);
+    setError(null);
+    setRetryCount(0);
     
     try {
       const chatSession = await getOrCreateChatSession(
@@ -112,11 +154,12 @@ export function useArticleChat(articleId: string, articleTitle: string) {
       );
       setSession(chatSession);
     } catch (err: any) {
+      console.error('Failed to reset chat:', err);
       setError(err.message || 'Failed to reset chat');
       toast({
-        title: 'Error',
-        description: 'Failed to reset chat',
-        variant: 'destructive'
+        title: "Error",
+        description: "Failed to reset chat",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

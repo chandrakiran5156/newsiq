@@ -99,6 +99,14 @@ export async function sendMessage(
   sessionId: string
 ): Promise<ChatResponse> {
   try {
+    // Add more detailed logging for debugging
+    console.log('Sending message to edge function:', {
+      userMessage: userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
+      articleId,
+      userId,
+      sessionId
+    });
+    
     const response = await supabase.functions.invoke('article-chat', {
       body: { 
         userMessage, 
@@ -112,6 +120,13 @@ export async function sendMessage(
       console.error('Edge function error:', response.error);
       throw new Error(response.error.message || 'Error communicating with AI chat');
     }
+    
+    // Add logging about the response
+    console.log('Received response from edge function:', {
+      status: 'success',
+      n8nStatus: response.data?.n8nStatus,
+      messageLength: response.data?.message?.length || 0
+    });
     
     return response.data as ChatResponse;
   } catch (error) {
