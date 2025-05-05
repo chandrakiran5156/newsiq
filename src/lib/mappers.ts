@@ -1,4 +1,3 @@
-
 import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -67,25 +66,26 @@ export function mapDbQuizToQuiz(dbQuiz: any): Quiz {
     
     console.log('Extracted questions before transformation:', questions);
     
-    // Transform the new format to match our frontend Quiz type
+    // Transform the questions to match our frontend Quiz type
     const transformedQuestions = Array.isArray(questions) ? questions.map(q => {
       // Check if we have the new format with question_number, question_text, etc.
       if (q.question_text) {
-        const options = Object.values(q.options || {});
+        // Get options as an array, preserving the order from A, B, C, D, etc.
+        const optionKeys = Object.keys(q.options || {}).sort();
+        const options = optionKeys.map(key => q.options[key]);
         
-        // Find the index of the correct option
-        let correctOptionIndex = 0;
+        // Find the index of the correct option based on the letter (A, B, C, D)
         const correctAnswer = q.correct_answer;
-        const optionKeys = Object.keys(q.options || {});
-        correctOptionIndex = optionKeys.findIndex(key => key === correctAnswer);
+        const correctOptionIndex = optionKeys.indexOf(correctAnswer);
         
-        if (correctOptionIndex === -1) correctOptionIndex = 0;
+        // Default to 0 if the correct answer isn't found
+        const finalCorrectIndex = correctOptionIndex === -1 ? 0 : correctOptionIndex;
         
         return {
           id: q.question_number.toString(),
           question: q.question_text,
           options: options,
-          correctOptionIndex: correctOptionIndex,
+          correctOptionIndex: finalCorrectIndex,
           explanation: q.explanation || ""
         };
       }
