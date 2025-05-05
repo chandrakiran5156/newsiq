@@ -1,15 +1,17 @@
 
+// Import the serve function from Deno standard library
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.3';
+// Import Supabase JS client - using a specific import that's compatible with Deno
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook-test/916b0eb7-0da0-4000-86c8-9654d930338f";
+const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook-test/916b0eb7-0da0-4000-86c8-9654d930338f";
-const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -28,7 +30,7 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
+    // Create Supabase client using the Deno-compatible approach
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // Fetch article content to provide context
