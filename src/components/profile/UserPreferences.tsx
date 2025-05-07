@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ const difficultyLevels: { value: DifficultyLevel; label: string }[] = [
 ];
 
 export default function UserPreferences() {
+  
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -90,6 +90,8 @@ export default function UserPreferences() {
       difficulty_level: selectedDifficulty
     });
   };
+
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

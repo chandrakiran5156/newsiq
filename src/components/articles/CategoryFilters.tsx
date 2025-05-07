@@ -1,14 +1,44 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { categories } from '@/data/mockData';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/lib/supabase-auth';
+import { useQuery } from '@tanstack/react-query';
+import { fetchUserPreferences } from '@/lib/api';
 
 interface CategoryFiltersProps {
   onSelectCategory: (categoryId: string | null) => void;
   selectedCategory: string | null;
+  filterByUserPreferences?: boolean;
 }
 
-export default function CategoryFilters({ onSelectCategory, selectedCategory }: CategoryFiltersProps) {
+export default function CategoryFilters({ 
+  onSelectCategory, 
+  selectedCategory,
+  filterByUserPreferences = false
+}: CategoryFiltersProps) {
+  const { user } = useAuth();
+  const [userCategories, setUserCategories] = useState<string[]>([]);
+  
+  // Fetch user preferences to get selected categories
+  const { data: preferences } = useQuery({
+    queryKey: ['user-preferences', user?.id],
+    queryFn: () => user ? fetchUserPreferences(user.id) : Promise.reject('No user'),
+    enabled: !!user && filterByUserPreferences,
+  });
+  
+  // Update categories when preferences change
+  useEffect(() => {
+    if (preferences && filterByUserPreferences) {
+      setUserCategories(preferences.categories || []);
+    }
+  }, [preferences, filterByUserPreferences]);
+  
+  // Filter categories to show only user-selected ones if needed
+  const displayedCategories = filterByUserPreferences && userCategories.length > 0
+    ? categories.filter(cat => userCategories.includes(cat.id))
+    : categories;
+
   return (
     <div className="mb-4">
       <ScrollArea className="pb-2">
@@ -23,7 +53,7 @@ export default function CategoryFilters({ onSelectCategory, selectedCategory }: 
           >
             All
           </button>
-          {categories.map((category) => (
+          {displayedCategories.map((category) => (
             <button
               key={category.id}
               onClick={() => onSelectCategory(category.id)}

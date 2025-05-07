@@ -24,6 +24,9 @@ import {
 } from '@/components/ui/popover';
 import { toast } from "sonner";
 
+// Import CategoryFilters
+import CategoryFilters from '@/components/articles/CategoryFilters';
+
 // Define categories with their icons
 const categories: { id: Category; name: string; icon: string }[] = [
   { id: 'technology', name: 'Technology', icon: '💻' },
@@ -187,33 +190,12 @@ export default function Discover() {
           />
         </div>
         
-        {/* Topics Grid */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Filter className="h-5 w-5 text-primary" />
-            Categories
-          </h2>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {categories.map((category) => (
-              <Button 
-                key={category.id} 
-                variant={selectedCategory === category.id ? "default" : "outline"}
-                className="h-auto py-3 justify-start text-left"
-                onClick={() => handleCategoryChange(category.id)}
-              >
-                <span className="mr-2">{category.icon}</span> {category.name}
-              </Button>
-            ))}
-            <Button 
-              variant={!selectedCategory ? "default" : "outline"} 
-              className="h-auto py-3 justify-start text-left"
-              onClick={() => handleCategoryChange(null)}
-            >
-              View All
-            </Button>
-          </div>
-        </div>
+        {/* Use the CategoryFilters component with filter by preferences for the recommended tab */}
+        <CategoryFilters 
+          onSelectCategory={handleCategoryChange}
+          selectedCategory={selectedCategory}
+          filterByUserPreferences={selectedTab === 'recommended'}
+        />
         
         {/* Content Tabs */}
         <Tabs defaultValue="all" value={selectedTab} className="w-full" onValueChange={(value) => {

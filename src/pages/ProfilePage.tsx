@@ -10,6 +10,7 @@ import { mapArray, mapDbUserAchievementToUserAchievement, mapDbProfileToUserProf
 import ArticleList from '@/components/articles/ArticleList';
 import UserPreferences from '@/components/profile/UserPreferences';
 import { UserProfile } from '@/types';
+import LogoutButton from '@/components/profile/LogoutButton';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -313,6 +314,11 @@ export default function ProfilePage() {
             </TabsContent>
           </Tabs>
         </div>
+      </div>
+
+      {/* Add this near the bottom of your component, likely in the user actions/settings section */}
+      <div className="mt-4">
+        <LogoutButton variant="destructive" className="w-full" />
       </div>
     </div>
   );
