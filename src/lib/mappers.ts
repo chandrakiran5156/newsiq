@@ -38,7 +38,7 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
 }
 
 // Updated mapper function to handle the new quiz question format from quiz_questions table
-export function mapDbQuizToQuiz(dbQuiz: any, dbQuizQuestions: DbQuizQuestion[] = []): Quiz {
+export function mapDbQuizToQuiz(dbQuiz: any, dbQuizQuestions: any[] = []): Quiz {
   try {
     console.log('Raw quiz data from DB:', dbQuiz);
     console.log('Quiz questions from DB:', dbQuizQuestions);
@@ -49,7 +49,7 @@ export function mapDbQuizToQuiz(dbQuiz: any, dbQuizQuestions: DbQuizQuestion[] =
     // Transform the questions to match our frontend Quiz type
     const transformedQuestions = sortedQuestions.map(q => {
       // Get options as an array while preserving order from A, B, C, D...
-      const optionsObj = q.options || {};
+      const optionsObj = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
       const optionKeys = Object.keys(optionsObj).sort();
       const options = optionKeys.map(key => optionsObj[key]);
       

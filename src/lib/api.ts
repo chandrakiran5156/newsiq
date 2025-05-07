@@ -337,11 +337,11 @@ export async function fetchQuizByArticleId(articleId: string) {
       return null;
     }
     
-    // Now fetch the questions for this quiz
+    // Now fetch the questions for this quiz using quiz_id instead of article_id
     const { data: questionData, error: questionError } = await supabase
       .from('quiz_questions')
       .select('*')
-      .eq('article_id', articleId)
+      .eq('quiz_id', quizData.id)
       .order('question_number', { ascending: true });
       
     if (questionError) {

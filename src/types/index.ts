@@ -1,3 +1,4 @@
+
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -85,14 +86,14 @@ export interface N8nQuizQuestion {
   quiz_title?: string;
 }
 
-// New interface for the quiz_questions table
+// Updated interface for the quiz_questions table - modified to handle Json type
 export interface DbQuizQuestion {
   id: string;
   quiz_id: string;
-  article_id: string;
+  article_id: string | null;
   question_number: number;
   question_text: string;
-  options: Record<string, string>;
+  options: Record<string, string> | any; // Accept any to handle Json type from Supabase
   correct_answer: string;
   explanation: string | null;
   created_at?: string;
