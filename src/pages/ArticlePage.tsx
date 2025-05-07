@@ -1,13 +1,12 @@
-
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Article } from '@/types';
+import { Article, DifficultyLevel } from '@/types';
 import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction } from '@/lib/api';
+import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction, fetchUserPreferences } from '@/lib/api';
 import { categories } from '@/data/mockData'; // Only using for category data
 import { useAuth } from '@/lib/supabase-auth';
 import ArticleChatPanel from '@/components/article-chat/ArticleChatPanel';
@@ -33,6 +32,18 @@ export default function ArticlePage() {
           description: "Could not load the article. Please try again.",
           variant: "destructive"
         });
+      }
+    }
+  });
+  
+  // Fetch user preferences to determine which summary to show
+  const { data: preferences } = useQuery({
+    queryKey: ['user-preferences', user?.id],
+    queryFn: () => user ? fetchUserPreferences(user.id) : Promise.reject('No user'),
+    enabled: !!user,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch user preferences:', error);
       }
     }
   });
@@ -116,6 +127,29 @@ export default function ArticlePage() {
     return () => clearInterval(timer);
   }, [readingProgress, id, user]);
 
+  // Helper function to get the appropriate summary based on user preferences
+  const getAppropriateArticleSummary = () => {
+    if (!article) return '';
+    
+    // Default to the regular summary if preferences aren't available
+    if (!preferences) return article.summary;
+    
+    // Get the user's preferred difficulty level
+    const difficultyLevel = preferences.difficulty_level as DifficultyLevel || 'intermediate';
+    
+    // Return the appropriate summary based on difficulty level
+    switch (difficultyLevel) {
+      case 'beginner':
+        return article.summaryBeginner || article.summary;
+      case 'intermediate':
+        return article.summaryIntermediate || article.summary;
+      case 'advanced':
+        return article.summaryAdvanced || article.summary;
+      default:
+        return article.summary;
+    }
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -148,6 +182,7 @@ export default function ArticlePage() {
 
   const categoryData = article ? categories.find(cat => cat.id === article.category) : null;
   const isSaved = interaction?.isSaved || false;
+  const articleSummary = getAppropriateArticleSummary();
 
   if (isArticleLoading) {
     return (
@@ -218,6 +253,11 @@ export default function ArticlePage() {
             <span>{article.readTime} min read</span>
           </div>
           <span>By {article.author}</span>
+        </div>
+        
+        {/* Article summary - Now using the appropriate summary based on difficulty level */}
+        <div className="bg-muted/50 p-4 rounded-lg mb-6">
+          <p className="italic text-muted-foreground">{articleSummary}</p>
         </div>
       </div>
 

@@ -1,4 +1,3 @@
-
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -32,6 +31,9 @@ export interface Article {
   id: string;
   title: string;
   summary: string;
+  summaryBeginner?: string;
+  summaryIntermediate?: string;
+  summaryAdvanced?: string;
   content: string;
   source: {
     name: string;

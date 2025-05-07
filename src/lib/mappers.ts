@@ -1,3 +1,4 @@
+
 import { Article, Category, DifficultyLevel, Quiz, UserArticleInteraction, Achievement, UserAchievement, DbQuizQuestion } from "@/types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -24,6 +25,9 @@ export function mapDbArticleToArticle(dbArticle: any): Article {
     id: dbArticle.id,
     title: dbArticle.title,
     summary: dbArticle.summary,
+    summaryBeginner: dbArticle.summary_beginner,
+    summaryIntermediate: dbArticle.summary_intermediate,
+    summaryAdvanced: dbArticle.summary_advanced,
     content: dbArticle.content,
     source: source,
     publishedAt: dbArticle.published_at,

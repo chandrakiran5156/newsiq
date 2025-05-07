@@ -49,6 +49,9 @@ export type Database = {
           read_time: number
           source: string
           summary: string
+          summary_advanced: string | null
+          summary_beginner: string | null
+          summary_intermediate: string | null
           tags: string[] | null
           title: string
           views_count: number | null
@@ -65,6 +68,9 @@ export type Database = {
           read_time: number
           source: string
           summary: string
+          summary_advanced?: string | null
+          summary_beginner?: string | null
+          summary_intermediate?: string | null
           tags?: string[] | null
           title: string
           views_count?: number | null
@@ -81,6 +87,9 @@ export type Database = {
           read_time?: number
           source?: string
           summary?: string
+          summary_advanced?: string | null
+          summary_beginner?: string | null
+          summary_intermediate?: string | null
           tags?: string[] | null
           title?: string
           views_count?: number | null

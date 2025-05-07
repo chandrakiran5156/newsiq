@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sendLoginWebhook } from './webhooks';
 
 export type AuthSession = {
   user: User | null;
@@ -28,20 +29,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up listener for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log('Auth state changed:', event, currentSession?.user?.email);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsLoading(false);
+        
+        // Send webhook on sign_in event
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          await sendLoginWebhook(currentSession.user.id);
+        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       console.log('Current session check:', currentSession?.user?.email || 'No session');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
+      
+      // If there's an existing session, send the webhook
+      if (currentSession?.user) {
+        await sendLoginWebhook(currentSession.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -65,8 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
           }
         });
+        // Note: Webhook will be triggered by onAuthStateChange when the OAuth flow completes
       } else if (provider === 'email' && options?.email && options?.password) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: options.email,
           password: options.password
         });
@@ -82,6 +94,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             title: "Login successful",
             description: "Welcome back!",
           });
+          
+          // Call webhook after successful email login
+          if (data?.user) {
+            await sendLoginWebhook(data.user.id);
+          }
         }
       }
     } catch (error: any) {
