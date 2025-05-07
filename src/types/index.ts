@@ -1,3 +1,4 @@
+
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type Category = 
@@ -161,6 +162,7 @@ export interface ChatMessage {
   message: string;
   role: 'user' | 'assistant';
   createdAt: string;
+  isVoice?: boolean;
 }
 
 export interface ChatResponse {

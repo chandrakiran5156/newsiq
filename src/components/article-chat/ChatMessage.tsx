@@ -1,42 +1,78 @@
 
+import React from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from '@supabase/supabase-js';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ChatMessage as ChatMessageType } from '@/types';
-import { Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Mic } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   user: User | null;
 }
 
-export default function ChatMessage({ message, user }: ChatMessageProps) {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, user }) => {
   const isUser = message.role === 'user';
-  const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : 'U';
   
+  // Format the timestamp for display
+  const formattedTime = message.createdAt ? 
+    format(new Date(message.createdAt), 'h:mm a') : '';
+  
+  // Get user's initials for avatar fallback
+  const getInitials = () => {
+    if (!user?.email) return '?';
+    const email = user.email;
+    return email.substring(0, 2).toUpperCase();
+  };
+
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={cn("flex gap-3 max-w-[90%]", 
+      isUser ? "ml-auto flex-row-reverse" : ""
+    )}>
+      {/* Avatar */}
       <Avatar className="h-8 w-8">
         {isUser ? (
           <>
             <AvatarImage src={user?.user_metadata?.avatar_url} />
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback>{getInitials()}</AvatarFallback>
           </>
         ) : (
           <>
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              <Bot size={16} />
-            </AvatarFallback>
+            <AvatarImage src="/assets/bot-avatar.png" />
+            <AvatarFallback>AI</AvatarFallback>
           </>
         )}
       </Avatar>
-      
-      <div className={`rounded-lg px-3 py-2 max-w-[80%] ${
+
+      {/* Message bubble */}
+      <div className={cn(
+        "rounded-lg px-4 py-2 space-y-1 max-w-full break-words",
         isUser 
-          ? 'bg-primary text-primary-foreground' 
-          : 'bg-muted'
-      }`}>
-        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+          ? "bg-primary text-primary-foreground" 
+          : "bg-muted"
+      )}>
+        {/* Message content */}
+        <div className="whitespace-pre-wrap">
+          {message.message}
+          {message.isVoice && (
+            <span className="inline-flex items-center ml-2 text-xs opacity-70">
+              <Mic size={12} className="mr-1" />
+              voice
+            </span>
+          )}
+        </div>
+        
+        {/* Timestamp */}
+        <div className={cn(
+          "text-xs opacity-70 text-right",
+          isUser ? "text-primary-foreground/70" : "text-muted-foreground"
+        )}>
+          {formattedTime}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default ChatMessage;

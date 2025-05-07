@@ -21,6 +21,7 @@ function mapDbMessageToMessage(message: any): ChatMessage {
     message: message.message,
     role: message.role,
     createdAt: message.created_at,
+    isVoice: message.is_voice || false,
   };
 }
 
@@ -96,7 +97,8 @@ export async function sendMessage(
   userMessage: string,
   articleId: string, 
   userId: string, 
-  sessionId: string
+  sessionId: string,
+  isVoice: boolean = false
 ): Promise<ChatResponse> {
   try {
     // Add more detailed logging for debugging
@@ -104,7 +106,8 @@ export async function sendMessage(
       userMessage: userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''),
       articleId,
       userId,
-      sessionId
+      sessionId,
+      isVoice
     });
     
     const response = await supabase.functions.invoke('article-chat', {
@@ -112,7 +115,8 @@ export async function sendMessage(
         userMessage, 
         articleId, 
         userId, 
-        sessionId 
+        sessionId,
+        isVoice 
       },
     });
     

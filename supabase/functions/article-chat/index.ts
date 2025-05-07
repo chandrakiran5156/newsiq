@@ -37,7 +37,7 @@ serve(async (req) => {
 
   try {
     // Parse request body
-    const { userMessage, articleId, userId, sessionId } = await req.json();
+    const { userMessage, articleId, userId, sessionId, isVoice = false } = await req.json();
     
     if (!userMessage || !articleId || !userId) {
       return new Response(
@@ -46,7 +46,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing request: userId=${userId}, articleId=${articleId}, sessionId=${sessionId}`);
+    console.log(`Processing request: userId=${userId}, articleId=${articleId}, sessionId=${sessionId}, isVoice=${isVoice}`);
     
     // Create Supabase client using service role to bypass RLS
     const supabase = createClient(
@@ -104,7 +104,8 @@ serve(async (req) => {
         summary: articleData.summary
       },
       chatHistory,
-      sessionId // Add sessionId to the payload
+      sessionId, // Add sessionId to the payload
+      isVoice    // Add voice flag to payload
     };
 
     // Construct webhook URL with session ID as query parameter
@@ -152,7 +153,8 @@ serve(async (req) => {
       .insert({
         session_id: sessionId,
         message: userMessage,
-        role: 'user'
+        role: 'user',
+        is_voice: isVoice
       });
 
     if (userMsgError) {
@@ -167,7 +169,8 @@ serve(async (req) => {
       .insert({
         session_id: sessionId,
         message: assistantMessage,
-        role: 'assistant'
+        role: 'assistant',
+        is_voice: false // Assistant messages are never originally voice
       });
 
     if (assistantMsgError) {

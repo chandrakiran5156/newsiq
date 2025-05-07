@@ -90,7 +90,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
   }, [session?.id, processedMessageIds]);
 
   // Handle message sending with retry logic
-  const handleSendMessage = useCallback(async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string, isVoice = false) => {
     if (!user?.id || !session?.id || !message.trim()) return;
     
     setIsSending(true);
@@ -103,7 +103,8 @@ export function useArticleChat(articleId: string, articleTitle: string) {
         message,
         articleId,
         user.id,
-        session.id
+        session.id,
+        isVoice
       );
       
       // Reset retry count on success
@@ -123,6 +124,7 @@ export function useArticleChat(articleId: string, articleTitle: string) {
           message: "Sorry, I'm having trouble connecting right now. Please try again later.",
           role: 'assistant',
           createdAt: new Date().toISOString(),
+          isVoice: false
         };
         
         setMessages(prev => [...prev, errorMsg]);

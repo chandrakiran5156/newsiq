@@ -4,10 +4,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useArticleChat } from '@/hooks/use-article-chat';
-import { MessageCircle, Send, Bot, RefreshCw } from 'lucide-react';
+import { MessageCircle, Send, Bot, RefreshCw, Mic, MicOff, Volume, VolumeX } from 'lucide-react';
 import { Article } from '@/types';
 import { useAuth } from '@/lib/supabase-auth';
 import { useToast } from '@/hooks/use-toast';
+import { useVoiceRecorder } from '@/hooks/use-voice-recorder';
+import { useVoicePlayback } from '@/hooks/use-voice-playback';
 import ChatMessage from './ChatMessage';
 
 interface ArticleChatPanelProps {
@@ -30,6 +32,24 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     resetChat
   } = useArticleChat(article.id, article.title);
   
+  const {
+    isRecording,
+    isProcessing,
+    transcribedText,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    setTranscribedText
+  } = useVoiceRecorder();
+
+  const {
+    isEnabled: isVoiceEnabled,
+    isPlaying,
+    isLoading: isAudioLoading,
+    toggleEnabled: toggleVoice,
+    playText
+  } = useVoicePlayback();
+  
   // Scroll to bottom on new messages
   useEffect(() => {
     if (messageContainerRef.current && isOpen) {
@@ -48,6 +68,23 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     }
   }, [error, toast]);
   
+  // Update input with transcribed text
+  useEffect(() => {
+    if (transcribedText) {
+      setInputMessage(transcribedText);
+    }
+  }, [transcribedText]);
+
+  // Play assistant messages with text-to-speech
+  useEffect(() => {
+    if (isVoiceEnabled && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        playText(lastMessage.message);
+      }
+    }
+  }, [isVoiceEnabled, messages, playText]);
+  
   // Handle message sending
   const handleSendMessage = () => {
     if (!isAuthenticated) {
@@ -61,9 +98,9 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     
     if (inputMessage.trim() === '') return;
     
-    // Remove optimistic rendering since messages are now handled by the API
     sendMessage(inputMessage);
     setInputMessage('');
+    setTranscribedText('');
   };
   
   // Handle enter key press
@@ -74,8 +111,25 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
     }
   };
   
+  // Handle voice recording
+  const handleVoiceRecord = async () => {
+    if (isRecording) {
+      const text = await stopRecording();
+      if (text) {
+        setInputMessage(text);
+      }
+    } else {
+      await startRecording();
+    }
+  };
+  
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
+    
+    // Cancel any ongoing recording when closing the panel
+    if (!open && isRecording) {
+      cancelRecording();
+    }
   };
   
   // Initial welcome message when no messages exist
@@ -110,10 +164,21 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0">
         <SheetHeader className="p-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <Bot size={20} />
-            <span>Article Assistant</span>
-          </SheetTitle>
+          <div className="flex justify-between items-center">
+            <SheetTitle className="flex items-center gap-2">
+              <Bot size={20} />
+              <span>Article Assistant</span>
+            </SheetTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleVoice} 
+              className="text-muted-foreground hover:text-foreground" 
+              title={isVoiceEnabled ? "Disable voice responses" : "Enable voice responses"}
+            >
+              {isVoiceEnabled ? <Volume size={18} /> : <VolumeX size={18} />}
+            </Button>
+          </div>
         </SheetHeader>
         
         {!isAuthenticated ? (
@@ -145,7 +210,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
                   />
                 ))
               )}
-              {isSending && (
+              {(isSending || isAudioLoading) && (
                 <div className="flex space-x-2 items-center text-muted-foreground">
                   <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce"></div>
                   <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -172,16 +237,36 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
                   placeholder="Ask a question about this article..."
                   className="min-h-10 flex-1 resize-none"
                   rows={1}
-                  disabled={isSending}
+                  disabled={isSending || isRecording || isProcessing}
                 />
+                <Button
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="icon"
+                  onClick={handleVoiceRecord}
+                  disabled={isSending || isProcessing}
+                  className="relative"
+                  title={isRecording ? "Stop recording" : "Start voice recording"}
+                >
+                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                  {isRecording && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                  )}
+                </Button>
                 <Button 
                   onClick={handleSendMessage}
-                  disabled={isSending || inputMessage.trim() === ''}
+                  disabled={isSending || isProcessing || inputMessage.trim() === ''}
                   size="icon"
                 >
                   <Send size={18} />
                 </Button>
               </div>
+              
+              {isProcessing && (
+                <div className="text-xs text-muted-foreground mt-2 flex items-center justify-center">
+                  <span className="mr-2">Processing speech</span>
+                  <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full"></div>
+                </div>
+              )}
             </div>
           </>
         )}
