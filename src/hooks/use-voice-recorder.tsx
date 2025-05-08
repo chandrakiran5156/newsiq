@@ -70,9 +70,22 @@ export function useVoiceRecorder() {
                 throw new Error(`Error transcribing audio: ${error.message}`);
               }
               
+              if (data?.quotaExceeded) {
+                toast({
+                  title: 'OpenAI API Quota Exceeded',
+                  description: 'Your OpenAI API quota has been exceeded. Please check your account billing status.',
+                  variant: 'destructive',
+                  duration: 6000,
+                });
+                resolve('');
+                return;
+              }
+              
               if (data?.text) {
                 setTranscribedText(data.text);
                 resolve(data.text);
+              } else if (data?.error) {
+                throw new Error(data.error);
               } else {
                 throw new Error('No text was transcribed from the audio');
               }

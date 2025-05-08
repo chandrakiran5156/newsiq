@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useArticleChat } from '@/hooks/use-article-chat';
-import { MessageCircle, Send, Bot, RefreshCw, Mic, MicOff, Volume, VolumeX } from 'lucide-react';
+import { MessageCircle, Send, Bot, RefreshCw, Mic, MicOff, Volume, VolumeX, AlertCircle } from 'lucide-react';
 import { Article } from '@/types';
 import { useAuth } from '@/lib/supabase-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   
   const {
@@ -113,13 +114,26 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
   
   // Handle voice recording
   const handleVoiceRecord = async () => {
-    if (isRecording) {
-      const text = await stopRecording();
-      if (text) {
-        setInputMessage(text);
+    try {
+      setVoiceError(null);
+      
+      if (isRecording) {
+        const text = await stopRecording();
+        if (text) {
+          setInputMessage(text);
+        }
+      } else {
+        await startRecording();
       }
-    } else {
-      await startRecording();
+    } catch (err) {
+      console.error('Voice recording error:', err);
+      setVoiceError('Could not access microphone');
+      
+      toast({
+        title: 'Voice Input Error',
+        description: 'Could not access microphone or process audio. Please check permissions.',
+        variant: 'destructive'
+      });
     }
   };
   
@@ -217,6 +231,13 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
                   <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                 </div>
               )}
+              
+              {voiceError && (
+                <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-center gap-2 text-sm">
+                  <AlertCircle size={16} />
+                  <span>{voiceError}</span>
+                </div>
+              )}
             </div>
 
             {/* Input area */}
@@ -267,6 +288,14 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
                   <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full"></div>
                 </div>
               )}
+              
+              {/* OpenAI API Quota Warning */}
+              <div className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+                <p className="flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  Voice features require the OpenAI API. If you're seeing errors, please check your API quota.
+                </p>
+              </div>
             </div>
           </>
         )}
