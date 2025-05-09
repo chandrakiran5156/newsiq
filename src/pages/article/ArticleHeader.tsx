@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { Article } from '@/types';
 import { categories } from '@/data/mockData';
 

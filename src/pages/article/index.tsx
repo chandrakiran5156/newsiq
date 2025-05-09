@@ -2,7 +2,6 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Article } from '@/types';
-import { Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchArticleById, fetchUserPreferences, fetchNextArticle } from '@/lib/api';
 import { useAuth } from '@/lib/supabase-auth';
@@ -13,6 +12,7 @@ import ArticleImage from './ArticleImage';
 import ArticleContent from './ArticleContent';
 import NextArticleNavigation from './NextArticleNavigation';
 import ArticleActions from './ArticleActions';
+import { Link } from 'react-router-dom';
 
 export default function ArticlePage() {
   const { id } = useParams<{ id: string }>();
@@ -144,11 +144,10 @@ export default function ArticlePage() {
         onSaveToggle={handleSaveToggle}
       />
 
-      {/* Chat Panel */}
-      {article && <ArticleChatPanel article={article} />}
+      {/* Chat Panel - Positioned with appropriate z-index and padding to not overlap */}
+      <div className="mt-16">
+        {article && <ArticleChatPanel article={article} />}
+      </div>
     </div>
   );
 }
-
-// Additional imports that were missing
-import { Link } from 'react-router-dom';
