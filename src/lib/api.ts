@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Article, UserArticleInteraction, Quiz, Category, DifficultyLevel } from '@/types';
 import { 
@@ -80,28 +79,29 @@ export async function fetchArticles({
   }
 }
 
-export async function fetchArticleById(id: string) {
+export const fetchArticleById = async (id: string): Promise<Article> => {
   try {
-    console.log('Fetching article by id:', id);
-    
     const { data, error } = await supabase
       .from('articles')
       .select('*')
       .eq('id', id)
       .single();
-
+    
     if (error) {
-      console.error('Error fetching article:', error);
-      throw new Error(error.message);
+      console.error('Error fetching article by ID:', error);
+      throw error;
     }
-
-    console.log('Article fetched successfully');
+    
+    if (!data) {
+      throw new Error(`Article with ID ${id} not found`);
+    }
+    
     return mapDbArticleToArticle(data);
-  } catch (err) {
-    console.error('Error in fetchArticleById:', err);
-    throw err;
+  } catch (error) {
+    console.error('Failed to fetch article by ID:', error);
+    throw error;
   }
-}
+};
 
 export async function fetchTrendingArticles(limit = 5) {
   try {

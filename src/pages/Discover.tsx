@@ -113,13 +113,29 @@ export default function Discover() {
   });
     
   // Get articles based on selected tab and search results
+  // De-duplicate articles by ID
   const getDisplayArticles = (): Article[] => {
+    let articles: Article[] = [];
+    
     switch(selectedTab) {
       case 'recommended':
-        return recommendedArticles;
+        articles = [...recommendedArticles];
+        break;
       default:
-        return allArticles;
+        articles = [...allArticles];
+        break;
     }
+    
+    // Remove duplicates by article ID
+    const uniqueArticles = articles.reduce((acc: Article[], current) => {
+      const isDuplicate = acc.find(item => item.id === current.id);
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+    
+    return uniqueArticles;
   };
 
   const displayArticles = getDisplayArticles();

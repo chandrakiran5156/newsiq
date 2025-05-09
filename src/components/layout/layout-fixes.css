@@ -1,0 +1,25 @@
+
+/* Mobile navigation menu fixes */
+@media (max-width: 768px) {
+  .mobile-nav {
+    padding-left: 8px;
+    padding-right: 8px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .mobile-nav-item {
+    padding: 0 4px;
+  }
+}
+
+/* Learn more button visibility fix */
+.cta-button-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: 1px solid transparent;
+}
+
+.cta-button-primary:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}

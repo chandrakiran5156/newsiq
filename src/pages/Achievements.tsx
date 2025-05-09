@@ -14,18 +14,39 @@ export default function Achievements() {
     percentage: 0
   });
 
-  // Fetch all achievements
-  const { data: allAchievements, isLoading: isLoadingAll } = useQuery({
+  // Fetch all achievements with better error handling
+  const { data: allAchievements, isLoading: isLoadingAll, error: allError } = useQuery({
     queryKey: ['achievements-all'],
-    queryFn: fetchAllAchievements
+    queryFn: fetchAllAchievements,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch all achievements:', error);
+      }
+    }
   });
 
-  // Fetch user achievements
-  const { data: userAchievements, isLoading: isLoadingUser } = useQuery({
+  // Fetch user achievements with better error handling
+  const { data: userAchievements, isLoading: isLoadingUser, error: userError } = useQuery({
     queryKey: ['achievements-user', user?.id],
     queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch user achievements:', error);
+      }
+    }
   });
+
+  // Log for debugging
+  useEffect(() => {
+    if (allError) console.error('All achievements error:', allError);
+    if (userError) console.error('User achievements error:', userError);
+    
+    console.log('All achievements data:', allAchievements);
+    console.log('User achievements data:', userAchievements);
+  }, [allAchievements, userAchievements, allError, userError]);
 
   useEffect(() => {
     if (allAchievements && userAchievements) {
@@ -45,6 +66,29 @@ export default function Achievements() {
     return (
       <div className="flex justify-center items-center h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Handle error cases
+  if (allError || userError || !allAchievements) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Achievements</h1>
+          <p className="text-muted-foreground">
+            Track your progress and earn recognition for your learning journey.
+          </p>
+        </div>
+        
+        <div className="bg-destructive/10 p-6 rounded-lg text-center">
+          <p className="text-destructive font-medium mb-2">
+            Could not load achievements
+          </p>
+          <p className="text-sm">
+            There was an error loading achievement data. Please try again later.
+          </p>
+        </div>
       </div>
     );
   }

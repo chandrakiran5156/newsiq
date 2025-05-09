@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { N8nQuizQuestion } from '@/types';
 
@@ -85,3 +84,23 @@ export async function createOrUpdateQuiz(
     return null;
   }
 }
+
+export const checkQuizExists = async (articleId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('quizzes')
+      .select('id')
+      .eq('article_id', articleId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking quiz existence:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Failed to check quiz existence:', error);
+    return false;
+  }
+};

@@ -1,12 +1,13 @@
+
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Article, DifficultyLevel } from '@/types';
-import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Share } from 'lucide-react';
+import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Share, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction, fetchUserPreferences } from '@/lib/api';
+import { fetchArticleById, saveArticleInteraction, getUserArticleInteraction, fetchUserPreferences, fetchNextArticle } from '@/lib/api';
 import { categories } from '@/data/mockData'; // Only using for category data
 import { useAuth } from '@/lib/supabase-auth';
 import ArticleChatPanel from '@/components/article-chat/ArticleChatPanel';
@@ -58,6 +59,32 @@ export default function ArticlePage() {
         console.error('Failed to fetch article interaction:', error);
       }
     }
+  });
+
+  // Fetch next article
+  const { data: nextArticle } = useQuery({
+    queryKey: ['nextArticle', id],
+    queryFn: () => id ? fetchNextArticle(id) : Promise.reject('No article ID'),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000
+  });
+
+  // Check if quiz exists for this article
+  const { data: quizExists, isLoading: isQuizLoading } = useQuery({
+    queryKey: ['quizExists', id],
+    queryFn: async () => {
+      if (!id) return false;
+      try {
+        const response = await fetch(`/api/quizzes/check/${id}`);
+        if (!response.ok) return false;
+        const data = await response.json();
+        return !!data.exists;
+      } catch (error) {
+        console.error('Error checking quiz existence:', error);
+        return false;
+      }
+    },
+    enabled: !!id
   });
 
   // Update article interaction mutation
@@ -137,7 +164,7 @@ export default function ArticlePage() {
     // Get the user's preferred difficulty level
     const difficultyLevel = preferences.difficulty_level as DifficultyLevel || 'intermediate';
     
-    // Return the appropriate summary based on difficulty level
+    // Return the appropriate summary based on difficulty level (changes made here)
     switch (difficultyLevel) {
       case 'beginner':
         return article.summaryBeginner || article.summary;
@@ -182,6 +209,7 @@ export default function ArticlePage() {
 
   const categoryData = article ? categories.find(cat => cat.id === article.category) : null;
   const isSaved = interaction?.isSaved || false;
+  // Get appropriate summary based on user preference
   const articleSummary = getAppropriateArticleSummary();
 
   if (isArticleLoading) {
@@ -255,20 +283,17 @@ export default function ArticlePage() {
           <span>By {article.author}</span>
         </div>
         
-        {/* Article summary - Now using the appropriate summary based on difficulty level */}
-        <div className="bg-muted/50 p-4 rounded-lg mb-6">
-          <p className="italic text-muted-foreground">{articleSummary}</p>
-        </div>
+        {/* Summary block removed as requested */}
       </div>
 
-      {/* Article image - optimized for faster loading */}
-      <div className="mb-6 rounded-lg overflow-hidden">
+      {/* Article image - optimized and reduced size */}
+      <div className="mb-6 rounded-lg overflow-hidden max-h-[300px]">
         <img 
           src={article.imageUrl} 
           alt={article.title} 
-          className="w-full h-auto object-cover"
-          loading="eager" // Load immediately for better UX
-          fetchPriority="high" // Modern browsers prioritize loading this image
+          className="w-full h-auto object-cover max-h-[300px]"
+          loading="eager" 
+          fetchPriority="high" 
         />
       </div>
 
@@ -279,13 +304,43 @@ export default function ArticlePage() {
         dangerouslySetInnerHTML={{ __html: article.content }}
       />
 
-      {/* Actions */}
-      <div className="sticky bottom-20 bg-background/95 backdrop-blur-md border border-border rounded-lg p-3 mt-8">
+      {/* Navigation between articles */}
+      {nextArticle && (
+        <div className="mt-8 border-t pt-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Continue Reading</h3>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate(`/article/${nextArticle.id}`)}
+              className="flex items-center gap-1"
+            >
+              Next Article <ArrowRight size={16} />
+            </Button>
+          </div>
+          <div className="mt-2 bg-muted/30 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+            <Link 
+              to={`/article/${nextArticle.id}`}
+              className="block"
+            >
+              <p className="font-medium line-clamp-2">{nextArticle.title}</p>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <span>{nextArticle.category}</span>
+                <span>•</span>
+                <span>{nextArticle.readTime} min read</span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Actions - now with fixed position at bottom to not overlap with chat */}
+      <div className="sticky bottom-4 bg-background/95 backdrop-blur-md border border-border rounded-lg p-3 mt-8 z-20">
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium hidden sm:block">
             Found this article helpful?
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end w-full sm:w-auto">
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share size={16} className="mr-2" /> Share
             </Button>
@@ -308,14 +363,16 @@ export default function ArticlePage() {
             <Button 
               size="sm" 
               onClick={() => navigate(`/quiz/${article.id}`)}
+              disabled={isQuizLoading || !quizExists}
+              className={!quizExists ? "opacity-50 cursor-not-allowed" : ""}
             >
-              Take Quiz
+              {isQuizLoading ? "Checking..." : "Take Quiz"}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Chat Panel */}
+      {/* Chat Panel - now with position that doesn't overlap buttons */}
       {article && <ArticleChatPanel article={article} />}
     </div>
   );
