@@ -865,3 +865,48 @@ async function checkAndAwardAchievement(userId: string, achievementName: string)
     return false;
   }
 }
+
+// Add the fetchNextArticle function to the existing api.ts file
+export const fetchNextArticle = async (currentArticleId: string): Promise<Article | null> => {
+  try {
+    // Get the current article to find its category
+    const currentArticle = await fetchArticleById(currentArticleId);
+    if (!currentArticle) return null;
+    
+    // Fetch articles in the same category
+    const { data: articles, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('category', currentArticle.category)
+      .neq('id', currentArticleId)
+      .order('published_at', { ascending: false })
+      .limit(1);
+      
+    if (error) {
+      console.error('Error fetching next article:', error);
+      return null;
+    }
+    
+    if (articles.length === 0) {
+      // If no articles in same category, get any other article
+      const { data: anyArticles, error: anyError } = await supabase
+        .from('articles')
+        .select('*')
+        .neq('id', currentArticleId)
+        .order('published_at', { ascending: false })
+        .limit(1);
+        
+      if (anyError) {
+        console.error('Error fetching any next article:', anyError);
+        return null;
+      }
+      
+      return anyArticles.length > 0 ? mapDbArticleToArticle(anyArticles[0]) : null;
+    }
+    
+    return mapDbArticleToArticle(articles[0]);
+  } catch (error) {
+    console.error('Failed to fetch next article:', error);
+    return null;
+  }
+};
