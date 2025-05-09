@@ -15,7 +15,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/home" className="text-xl font-bold">
-            LearnApp
+            News<span className="text-primary">IQ</span>
           </Link>
           
           {/* Desktop Navigation */}
@@ -65,3 +65,4 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </div>
   );
 };
+
