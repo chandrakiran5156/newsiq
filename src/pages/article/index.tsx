@@ -131,9 +131,6 @@ export default function ArticlePage() {
       {/* Article content */}
       <ArticleContent article={article} />
 
-      {/* Navigation between articles */}
-      <NextArticleNavigation nextArticle={nextArticle} />
-
       {/* Actions - save, share, quiz */}
       <ArticleActions 
         articleId={article.id}
@@ -144,7 +141,10 @@ export default function ArticlePage() {
         onSaveToggle={handleSaveToggle}
       />
 
-      {/* Chat Panel - Positioned with appropriate z-index and padding to not overlap */}
+      {/* Navigation between articles - moved after the actions */}
+      <NextArticleNavigation nextArticle={nextArticle} />
+
+      {/* Chat Panel */}
       <div className="mt-16">
         {article && <ArticleChatPanel article={article} />}
       </div>

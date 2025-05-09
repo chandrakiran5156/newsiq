@@ -23,3 +23,8 @@
 .cta-button-primary:hover {
   background-color: hsl(var(--primary) / 0.9);
 }
+
+/* Spacing fix for article actions and next article navigation */
+.article-actions {
+  margin-bottom: 1.5rem;
+}
