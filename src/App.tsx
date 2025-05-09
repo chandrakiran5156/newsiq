@@ -18,8 +18,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Discover from "./pages/Discover";
 import Library from "./pages/Library";
-import Achievements from "./pages/Achievements";
-import Leaderboard from "./pages/Leaderboard";
+import LeaderboardAndAchievements from "./pages/LeaderboardAndAchievements";
 import NotFound from "./pages/NotFound";
 import Features from "./pages/Features";
 import Contact from "./pages/Contact";
@@ -93,14 +92,20 @@ const AppRoutes = () => {
           <MainLayout><Library /></MainLayout>
         </ProtectedRoute>
       } />
+      <Route path="/leaderboard-achievements" element={
+        <ProtectedRoute>
+          <MainLayout><LeaderboardAndAchievements /></MainLayout>
+        </ProtectedRoute>
+      } />
+      {/* Add redirects for the old routes */}
       <Route path="/achievements" element={
         <ProtectedRoute>
-          <MainLayout><Achievements /></MainLayout>
+          <Navigate to="/leaderboard-achievements" replace />
         </ProtectedRoute>
       } />
       <Route path="/leaderboard" element={
         <ProtectedRoute>
-          <MainLayout><Leaderboard /></MainLayout>
+          <Navigate to="/leaderboard-achievements" replace />
         </ProtectedRoute>
       } />
       <Route path="/profile" element={
