@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserAchievements, fetchAllAchievements, fetchUserLeaderboardPosition } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
@@ -50,7 +50,7 @@ export default function LeaderboardAndAchievements() {
   });
 
   // Calculate achievement progress
-  useState(() => {
+  useEffect(() => {
     if (allAchievements && userAchievements) {
       const earnedCount = userAchievements.filter(a => a.earned_at).length;
       const totalCount = allAchievements.length;
@@ -62,7 +62,7 @@ export default function LeaderboardAndAchievements() {
         percentage
       });
     }
-  });
+  }, [allAchievements, userAchievements]);
 
   // Process achievements to separate earned and locked
   const processedAchievements = allAchievements?.map(achievement => {
@@ -83,7 +83,7 @@ export default function LeaderboardAndAchievements() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Leaderboard & Achievements</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Achievements & Leaderboard</h1>
         <p className="text-muted-foreground">
           Track your progress and see how you compare with other learners.
         </p>
@@ -103,6 +103,23 @@ export default function LeaderboardAndAchievements() {
             </TabsContent>
             
             <TabsContent value="achievements" className="space-y-6">
+              {/* Achievement Progress */}
+              {user && allAchievements && userAchievements && (
+                <div className="bg-card p-4 rounded-lg border shadow-sm mb-6">
+                  <h2 className="text-lg font-semibold mb-2">Achievement Progress</h2>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{achievementProgress.earned} of {achievementProgress.total} achievements earned</span>
+                    <span>{achievementProgress.percentage}%</span>
+                  </div>
+                  <Progress value={achievementProgress.percentage} className="h-2" />
+                  <div className="mt-3">
+                    <p className="text-sm text-muted-foreground">
+                      Keep reading articles and completing quizzes to earn more achievements!
+                    </p>
+                  </div>
+                </div>
+              )}
+            
               {isLoadingAll || isLoadingUser ? (
                 <div className="flex justify-center items-center h-[60vh]">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -197,23 +214,6 @@ export default function LeaderboardAndAchievements() {
                     Keep reading and taking quizzes to climb higher!
                   </p>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Achievement Progress */}
-          {user && allAchievements && userAchievements && (
-            <div className="bg-card p-4 rounded-lg border shadow-sm">
-              <h2 className="text-lg font-semibold mb-2">Achievement Progress</h2>
-              <div className="flex justify-between text-sm mb-1">
-                <span>{achievementProgress.earned} of {achievementProgress.total} achievements earned</span>
-                <span>{achievementProgress.percentage}%</span>
-              </div>
-              <Progress value={achievementProgress.percentage} className="h-2" />
-              <div className="mt-3">
-                <p className="text-sm text-muted-foreground">
-                  Keep reading articles and completing quizzes to earn more achievements!
-                </p>
               </div>
             </div>
           )}

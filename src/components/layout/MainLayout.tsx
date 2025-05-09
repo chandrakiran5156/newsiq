@@ -2,7 +2,7 @@
 import React from 'react';
 import ThemeToggle from '@/components/ui-custom/ThemeToggle';
 import { Link } from 'react-router-dom';
-import { Home, Search, BookOpen, Trophy, BarChart2, User } from 'lucide-react';
+import { Home, Search, BookOpen, Trophy, User } from 'lucide-react';
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -23,8 +23,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <Link to="/home" className="hover:text-primary transition-colors">Home</Link>
             <Link to="/discover" className="hover:text-primary transition-colors">Discover</Link>
             <Link to="/library" className="hover:text-primary transition-colors">Library</Link>
-            <Link to="/achievements" className="hover:text-primary transition-colors">Achievements</Link>
-            <Link to="/leaderboard" className="hover:text-primary transition-colors">Leaderboard</Link>
+            <Link to="/leaderboard-achievements" className="hover:text-primary transition-colors">Achievements</Link>
             <Link to="/profile" className="hover:text-primary transition-colors">Profile</Link>
           </div>
           
@@ -65,4 +64,3 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </div>
   );
 };
-
