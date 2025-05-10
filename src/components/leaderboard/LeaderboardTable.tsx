@@ -14,6 +14,7 @@ import { fetchLeaderboard, fetchWeeklyLeaderboard, fetchMonthlyLeaderboard } fro
 import { Loader2, Trophy, Medal } from "lucide-react";
 import { useAuth } from "@/lib/supabase-auth";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface LeaderboardTableProps {
   refreshTrigger?: number;
@@ -115,12 +116,12 @@ export default function LeaderboardTable({ refreshTrigger = 0 }: LeaderboardTabl
   };
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="all-time" onValueChange={(value) => setPeriod(value as "all-time" | "weekly" | "monthly")}>
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="all-time">All Time</TabsTrigger>
-          <TabsTrigger value="weekly">This Week</TabsTrigger>
-          <TabsTrigger value="monthly">This Month</TabsTrigger>
+    <div>
+      <Tabs defaultValue="all-time" onValueChange={(value) => setPeriod(value as "all-time" | "weekly" | "monthly")} className="w-full">
+        <TabsList className="grid grid-cols-3 w-full rounded-t-md bg-muted/70">
+          <TabsTrigger value="all-time" className="font-medium">All Time</TabsTrigger>
+          <TabsTrigger value="weekly" className="font-medium">This Week</TabsTrigger>
+          <TabsTrigger value="monthly" className="font-medium">This Month</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all-time">
@@ -164,47 +165,63 @@ function renderLeaderboardTable(
   }
 
   return (
-    <div className="border rounded-md">
+    <div>
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted/30">
           <TableRow>
-            <TableHead className="w-16">Rank</TableHead>
+            <TableHead className="w-16 text-center">Rank</TableHead>
             <TableHead>User</TableHead>
             <TableHead className="text-right">Points</TableHead>
             <TableHead className="hidden sm:table-cell text-right">Quizzes</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">Avg Score</TableHead>
+            <TableHead className="hidden md:table-cell text-right">Avg Score</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((entry, index) => (
             <TableRow 
               key={entry.id}
-              className={`${entry.id === currentUserId ? 'bg-primary/5' : ''} ${getRankStyles(index + 1)}`}
+              className={`${entry.id === currentUserId ? 'bg-primary/5' : ''} ${getRankStyles(index + 1)} transition-colors`}
             >
-              <TableCell className="font-medium">
+              <TableCell className="font-medium text-center">
                 <div className="flex justify-center items-center">
-                  {getRankIcon(index + 1)}
+                  {index < 3 ? (
+                    <div className={`w-8 h-8 flex items-center justify-center rounded-full
+                      ${index === 0 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : 
+                        index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-300' : 
+                          'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                      }`}
+                    >
+                      {getRankIcon(index + 1)}
+                    </div>
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <img
-                    src={entry.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${entry.username || 'User'}`}
-                    alt={entry.username || 'User'}
-                    className="h-8 w-8 rounded-full"
-                  />
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage
+                      src={entry.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${entry.username || 'User'}`}
+                      alt={entry.username || 'User'}
+                    />
+                    <AvatarFallback>{entry.username?.[0] || 'U'}</AvatarFallback>
+                  </Avatar>
                   <div>
                     <div className="font-medium">{entry.username || 'Anonymous User'}</div>
+                    {entry.id === currentUserId && (
+                      <span className="text-xs text-primary font-medium">You</span>
+                    )}
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="text-right font-medium">
+              <TableCell className="text-right font-semibold">
                 {entry.points || 0}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-right">
                 {entry.quizzes_taken || 0}
               </TableCell>
-              <TableCell className="hidden sm:table-cell text-right">
+              <TableCell className="hidden md:table-cell text-right">
                 {entry.avg_quiz_score ? `${Math.round(entry.avg_quiz_score)}%` : 'N/A'}
               </TableCell>
             </TableRow>
