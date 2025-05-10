@@ -286,7 +286,6 @@ export type Database = {
       }
       quiz_questions: {
         Row: {
-          article_id: string | null
           correct_answer: string
           created_at: string | null
           explanation: string | null
@@ -297,7 +296,6 @@ export type Database = {
           quiz_id: string | null
         }
         Insert: {
-          article_id?: string | null
           correct_answer: string
           created_at?: string | null
           explanation?: string | null
@@ -308,7 +306,6 @@ export type Database = {
           quiz_id?: string | null
         }
         Update: {
-          article_id?: string | null
           correct_answer?: string
           created_at?: string | null
           explanation?: string | null
@@ -319,13 +316,6 @@ export type Database = {
           quiz_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "quiz_questions_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "quiz_questions_quiz_id_fkey"
             columns: ["quiz_id"]

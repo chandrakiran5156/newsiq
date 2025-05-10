@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Article } from '@/types';
 import { categories } from '@/data/mockData';
 
@@ -29,15 +29,20 @@ export default function ArticleHeader({ article }: ArticleHeaderProps) {
           <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
             {categoryData?.icon} {categoryData?.name}
           </span>
-          <span className={`text-sm font-medium difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
-            {article.difficultyLevel}
-          </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-3">{article.title}</h1>
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
           <div className="flex items-center">
-            <Clock size={16} className="mr-1" />
-            <span>{article.readTime} min read</span>
+            {article.source && (
+              <a 
+                href={article.source} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:underline hover:text-primary transition-colors"
+              >
+                Source Article
+              </a>
+            )}
           </div>
           <span>By {article.author}</span>
         </div>

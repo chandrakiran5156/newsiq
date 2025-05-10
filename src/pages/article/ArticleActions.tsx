@@ -73,10 +73,9 @@ export default function ArticleActions({
           <Button 
             size="sm" 
             onClick={() => navigate(`/quiz/${articleId}`)}
-            disabled={isQuizLoading || !quizExists}
-            className={!quizExists ? "opacity-50 cursor-not-allowed" : ""}
+            disabled={isQuizLoading}
           >
-            {isQuizLoading ? "Checking..." : "Take Quiz"}
+            {isQuizLoading ? "Checking..." : (quizExists ? "Take Quiz" : "No Quiz Available")}
           </Button>
         </div>
       </div>

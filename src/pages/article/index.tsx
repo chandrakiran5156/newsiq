@@ -59,6 +59,26 @@ export default function ArticlePage() {
     enabled: !!id,
     staleTime: 5 * 60 * 1000
   });
+  
+  // Fetch previous article
+  const { data: previousArticle } = useQuery({
+    queryKey: ['previousArticle', id],
+    queryFn: async () => {
+      if (!id) return null;
+      try {
+        // Assuming fetchNextArticle can be reused with a "previous" flag
+        // If not, you would need to create a new API function
+        const response = await fetch(`/api/articles/${id}/previous`);
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching previous article:', error);
+        return null;
+      }
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000
+  });
 
   // Check if quiz exists for this article
   const { data: quizExists, isLoading: isQuizLoading } = useQuery({
@@ -142,7 +162,7 @@ export default function ArticlePage() {
       />
 
       {/* Navigation between articles - moved after the actions */}
-      <NextArticleNavigation nextArticle={nextArticle} />
+      <NextArticleNavigation nextArticle={nextArticle} previousArticle={previousArticle} />
 
       {/* Chat Panel */}
       <div className="mt-16">
