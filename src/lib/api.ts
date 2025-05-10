@@ -364,6 +364,17 @@ export async function submitQuizAttempt(
     // Check and award achievements
     await checkQuizAchievements(userId);
 
+    // Mark the associated article as read
+    const { data: quiz } = await supabase
+      .from('quizzes')
+      .select('article_id')
+      .eq('id', quizId)
+      .single();
+
+    if (quiz && quiz.article_id) {
+      await saveArticleInteraction(userId, quiz.article_id, true, false);
+    }
+
     console.log('Quiz attempt submitted successfully');
     return true;
   } catch (err) {
@@ -789,6 +800,15 @@ async function updateLeaderboardPoints(userId: string, pointsToAdd: number) {
     }
 
     console.log(`Successfully updated leaderboard points for user ${userId}`);
+    
+    // Check for high points achievements
+    const totalPoints = (existingPoints.points || 0) + pointsToAdd;
+    if (totalPoints >= 1000) {
+      await checkAndAwardAchievement(userId, 'Point Master');
+    } else if (totalPoints >= 500) {
+      await checkAndAwardAchievement(userId, 'Point Collector');
+    }
+    
     return true;
   } catch (err) {
     console.error('Error in updateLeaderboardPoints:', err);
@@ -798,23 +818,39 @@ async function updateLeaderboardPoints(userId: string, pointsToAdd: number) {
 
 async function checkQuizAchievements(userId: string) {
   try {
+    // Count total quiz attempts
+    const { count: totalCount, error: countTotalError } = await supabase
+      .from('quiz_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (countTotalError) {
+      console.error('Error counting quiz attempts:', countTotalError);
+      return;
+    }
+
     // Count perfect quiz scores
-    const { count, error: countError } = await supabase
+    const { count: perfectCount, error: countPerfectError } = await supabase
       .from('quiz_attempts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('score', 100);
 
-    if (countError) {
-      console.error('Error counting perfect quizzes:', countError);
+    if (countPerfectError) {
+      console.error('Error counting perfect quizzes:', countPerfectError);
       return;
     }
 
-    console.log(`User ${userId} has ${count} perfect quizzes`);
+    console.log(`User ${userId} has ${totalCount} quiz attempts and ${perfectCount} perfect quizzes`);
     
     // Award Quiz Master for 5 perfect quizzes
-    if (count && count >= 5) {
+    if (perfectCount && perfectCount >= 5) {
       await checkAndAwardAchievement(userId, 'Quiz Master');
+    }
+    
+    // Award Quiz Enthusiast for 10 quiz attempts
+    if (totalCount && totalCount >= 10) {
+      await checkAndAwardAchievement(userId, 'Quiz Enthusiast');
     }
   } catch (err) {
     console.error('Error in checkQuizAchievements:', err);
@@ -828,13 +864,13 @@ async function checkAndAwardAchievement(userId: string, achievementName: string)
     // Find achievement ID
     const { data: achievement, error: achError } = await supabase
       .from('achievements')
-      .select('id')
+      .select('id, description')
       .eq('name', achievementName)
       .maybeSingle();
 
     if (achError || !achievement) {
       console.error('Error finding achievement:', achError);
-      return;
+      return null;
     }
 
     // Check if user already has this achievement
@@ -847,7 +883,7 @@ async function checkAndAwardAchievement(userId: string, achievementName: string)
 
     if (existError) {
       console.error('Error checking existing achievement:', existError);
-      return;
+      return null;
     }
 
     // If not already awarded, award it now
@@ -863,18 +899,26 @@ async function checkAndAwardAchievement(userId: string, achievementName: string)
 
       if (error) {
         console.error('Error awarding achievement:', error);
-        return;
+        return null;
       }
       
       console.log(`Achievement "${achievementName}" awarded to user ${userId}`);
+      return {
+        awarded: true,
+        name: achievementName,
+        description: achievement.description
+      };
     } else {
       console.log(`User ${userId} already has achievement "${achievementName}"`);
+      return {
+        awarded: false,
+        name: achievementName,
+        description: achievement.description
+      };
     }
-
-    return true;
   } catch (err) {
     console.error('Error in checkAndAwardAchievement:', err);
-    return false;
+    return null;
   }
 }
 
@@ -890,20 +934,39 @@ export async function checkReaderAchievement(userId: string) {
 
     if (countError) {
       console.error('Error counting read articles:', countError);
-      return;
+      return { error: countError.message };
     }
 
     console.log(`User ${userId} has read ${count} articles`);
     
     // Award Reader achievement after reading 5 articles
+    let achievementResult = null;
     if (count && count >= 5) {
-      await checkAndAwardAchievement(userId, 'Avid Reader');
+      achievementResult = await checkAndAwardAchievement(userId, 'Avid Reader');
+    }
+    
+    // Check for achievements based on saved articles
+    const { count: savedCount, error: savedCountError } = await supabase
+      .from('user_article_interactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_saved', true);
+      
+    if (savedCountError) {
+      console.error('Error counting saved articles:', savedCountError);
+    } else if (savedCount && savedCount >= 10) {
+      await checkAndAwardAchievement(userId, 'Article Collector');
     }
     
     // Update reading streak when an article is read
     await updateReadingStreak(userId);
     
-    return { articlesRead: count };
+    return { 
+      articlesRead: count, 
+      achievementEarned: achievementResult?.awarded,
+      achievementName: achievementResult?.name,
+      achievementDesc: achievementResult?.description
+    };
   } catch (err) {
     console.error('Error in checkReaderAchievement:', err);
     return { error: String(err) };
@@ -953,3 +1016,74 @@ export const fetchNextArticle = async (currentArticleId: string): Promise<Articl
     return null;
   }
 };
+
+// Function to check and update achievements for existing users
+export async function updateAchievementsForExistingUsers() {
+  try {
+    console.log('Checking achievements for all existing users');
+    
+    // Get all users
+    const { data: users, error: usersError } = await supabase
+      .from('profiles')
+      .select('id');
+      
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      return { error: usersError.message };
+    }
+    
+    if (!users || users.length === 0) {
+      console.log('No users found to update achievements');
+      return { updated: 0 };
+    }
+    
+    let updatedUsers = 0;
+    
+    // Process each user
+    for (const user of users) {
+      try {
+        // Check for reader achievements
+        await checkReaderAchievement(user.id);
+        
+        // Check for quiz achievements
+        await checkQuizAchievements(user.id);
+        
+        // Check for streak achievements
+        const { data: streak } = await supabase
+          .from('reading_streaks')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (streak && streak.current_streak >= 7) {
+          await checkAndAwardAchievement(user.id, 'Streak Hunter');
+        }
+        
+        // Check for point achievements
+        const { data: points } = await supabase
+          .from('leaderboard_points')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (points) {
+          if (points.points >= 1000) {
+            await checkAndAwardAchievement(user.id, 'Point Master');
+          } else if (points.points >= 500) {
+            await checkAndAwardAchievement(user.id, 'Point Collector');
+          }
+        }
+        
+        updatedUsers++;
+      } catch (error) {
+        console.error(`Error updating achievements for user ${user.id}:`, error);
+      }
+    }
+    
+    console.log(`Updated achievements for ${updatedUsers} users`);
+    return { updated: updatedUsers };
+  } catch (error) {
+    console.error('Error updating achievements for existing users:', error);
+    return { error: String(error) };
+  }
+}

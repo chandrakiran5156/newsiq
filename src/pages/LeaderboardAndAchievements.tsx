@@ -1,20 +1,25 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUserAchievements, fetchAllAchievements, fetchUserLeaderboardPosition } from "@/lib/api";
+import { fetchUserAchievements, fetchAllAchievements, fetchUserLeaderboardPosition, updateAchievementsForExistingUsers } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowUp, Trophy, Medal, Award } from "lucide-react";
+import { Loader2, ArrowUp, Trophy, Medal, Award, Book, Check, Star, Clock } from "lucide-react";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LeaderboardAndAchievements() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"leaderboard" | "achievements">("leaderboard");
   const [achievementProgress, setAchievementProgress] = useState({
     earned: 0,
     total: 0,
     percentage: 0
   });
+  const [isUpdatingAchievements, setIsUpdatingAchievements] = useState(false);
 
   // Fetch all achievements
   const { data: allAchievements, isLoading: isLoadingAll, error: allError } = useQuery({
@@ -29,7 +34,7 @@ export default function LeaderboardAndAchievements() {
   });
 
   // Fetch user achievements
-  const { data: userAchievements, isLoading: isLoadingUser, error: userError } = useQuery({
+  const { data: userAchievements, isLoading: isLoadingUser, error: userError, refetch: refetchUserAchievements } = useQuery({
     queryKey: ['achievements-user', user?.id],
     queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
     enabled: !!user,
@@ -63,6 +68,60 @@ export default function LeaderboardAndAchievements() {
     }
   }, [allAchievements, userAchievements]);
 
+  // Update achievements for existing users
+  const handleUpdateAchievements = async () => {
+    if (!user?.id) return;
+    
+    setIsUpdatingAchievements(true);
+    try {
+      const result = await updateAchievementsForExistingUsers();
+      if (result.error) {
+        toast({
+          title: "Error updating achievements",
+          description: String(result.error),
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Achievements Updated",
+          description: `Updated achievements for ${result.updated} users`,
+          variant: "success"
+        });
+        // Refetch user achievements
+        refetchUserAchievements();
+      }
+    } catch (error) {
+      toast({
+        title: "Error updating achievements",
+        description: String(error),
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingAchievements(false);
+    }
+  };
+
+  // Get icon based on achievement name
+  const getAchievementIcon = (name: string) => {
+    switch (name) {
+      case "Avid Reader":
+        return <Book className="h-5 w-5" />;
+      case "Quiz Master":
+        return <Trophy className="h-5 w-5" />;
+      case "Quiz Enthusiast":
+        return <Medal className="h-5 w-5" />;
+      case "Article Collector":
+        return <Star className="h-5 w-5" />;
+      case "Streak Hunter":
+        return <Clock className="h-5 w-5" />;
+      case "Point Collector":
+      case "Point Master":
+        return <Award className="h-5 w-5" />;
+      default:
+        return <Check className="h-5 w-5" />;
+    }
+  };
+
   // Process achievements to separate earned and locked
   const processedAchievements = allAchievements?.map(achievement => {
     const userAchievement = userAchievements?.find(ua => 
@@ -81,11 +140,23 @@ export default function LeaderboardAndAchievements() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Achievements & Leaderboard</h1>
-        <p className="text-muted-foreground">
-          Track your progress and see how you compare with other learners.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Achievements & Leaderboard</h1>
+          <p className="text-muted-foreground">
+            Track your progress and see how you compare with other learners.
+          </p>
+        </div>
+        {user?.id && (
+          <Button 
+            variant="outline" 
+            onClick={handleUpdateAchievements} 
+            disabled={isUpdatingAchievements}
+          >
+            {isUpdatingAchievements && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Achievements
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col-reverse md:flex-row gap-6">
@@ -144,7 +215,9 @@ export default function LeaderboardAndAchievements() {
                             key={achievement.id} 
                             className="bg-card border rounded-lg p-4 shadow-sm flex items-start gap-4"
                           >
-                            <div className="text-4xl flex-shrink-0">{achievement.icon_url}</div>
+                            <div className="bg-primary/10 rounded-full p-3 text-primary flex-shrink-0">
+                              {getAchievementIcon(achievement.name)}
+                            </div>
                             <div>
                               <h3 className="font-semibold">{achievement.name}</h3>
                               <p className="text-sm text-muted-foreground">{achievement.description}</p>
@@ -173,7 +246,9 @@ export default function LeaderboardAndAchievements() {
                             key={achievement.id} 
                             className="bg-secondary/30 border rounded-lg p-4 shadow-sm flex items-start gap-4 opacity-70"
                           >
-                            <div className="text-4xl flex-shrink-0">{achievement.icon_url}</div>
+                            <div className="bg-muted rounded-full p-3 text-muted-foreground flex-shrink-0">
+                              {getAchievementIcon(achievement.name)}
+                            </div>
                             <div>
                               <h3 className="font-semibold">{achievement.name}</h3>
                               <p className="text-sm text-muted-foreground">{achievement.criteria}</p>
@@ -225,7 +300,7 @@ export default function LeaderboardAndAchievements() {
                 {earnedAchievements.slice(0, 3).map((achievement) => (
                   <div key={achievement.id} className="flex items-center">
                     <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-                      <Award className="h-4 w-4" />
+                      {getAchievementIcon(achievement.name)}
                     </div>
                     <div>
                       <p className="font-medium">{achievement.name}</p>
@@ -238,6 +313,49 @@ export default function LeaderboardAndAchievements() {
               </div>
             </div>
           )}
+          
+          {/* Achievement Categories */}
+          <div className="bg-card p-4 rounded-lg border shadow-sm">
+            <h2 className="text-lg font-semibold mb-3">Achievement Categories</h2>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
+                  <Book className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Reading</p>
+                  <p className="text-xs text-muted-foreground">Complete reading articles</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
+                  <Trophy className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Quiz Performance</p>
+                  <p className="text-xs text-muted-foreground">Get perfect scores on quizzes</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Streaks</p>
+                  <p className="text-xs text-muted-foreground">Read articles consistently</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-2">
+                  <Award className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Points</p>
+                  <p className="text-xs text-muted-foreground">Earn points from activities</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

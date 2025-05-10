@@ -1,13 +1,16 @@
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchUserAchievements, fetchAllAchievements } from "@/lib/api";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { fetchUserAchievements, fetchAllAchievements, updateAchievementsForExistingUsers } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, Book, Trophy, Medal, Award, Clock, Star, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Achievements() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [achievementProgress, setAchievementProgress] = useState({
     earned: 0,
     total: 0,
@@ -27,7 +30,7 @@ export default function Achievements() {
   });
 
   // Fetch user achievements with better error handling
-  const { data: userAchievements, isLoading: isLoadingUser, error: userError } = useQuery({
+  const { data: userAchievements, isLoading: isLoadingUser, error: userError, refetch: refetchAchievements } = useQuery({
     queryKey: ['achievements-user', user?.id],
     queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
     enabled: !!user,
@@ -36,6 +39,26 @@ export default function Achievements() {
       onError: (error: Error) => {
         console.error('Failed to fetch user achievements:', error);
       }
+    }
+  });
+  
+  // Update achievements mutation
+  const { mutate: updateAchievements, isPending: isUpdating } = useMutation({
+    mutationFn: updateAchievementsForExistingUsers,
+    onSuccess: (data) => {
+      toast({
+        title: "Achievements Updated",
+        description: `Updated achievements for ${data.updated} users`,
+        variant: "success"
+      });
+      refetchAchievements();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating achievements",
+        description: String(error),
+        variant: "destructive"
+      });
     }
   });
 
@@ -61,6 +84,27 @@ export default function Achievements() {
       });
     }
   }, [allAchievements, userAchievements]);
+
+  // Get icon based on achievement name
+  const getAchievementIcon = (name: string) => {
+    switch (name) {
+      case "Avid Reader":
+        return <Book className="h-5 w-5" />;
+      case "Quiz Master":
+        return <Trophy className="h-5 w-5" />;
+      case "Quiz Enthusiast":
+        return <Medal className="h-5 w-5" />;
+      case "Article Collector":
+        return <Star className="h-5 w-5" />;
+      case "Streak Hunter":
+        return <Clock className="h-5 w-5" />;
+      case "Point Collector":
+      case "Point Master":
+        return <Award className="h-5 w-5" />;
+      default:
+        return <Check className="h-5 w-5" />;
+    }
+  };
 
   if (isLoadingAll || isLoadingUser) {
     return (
@@ -111,11 +155,24 @@ export default function Achievements() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Achievements</h1>
-        <p className="text-muted-foreground">
-          Track your progress and earn recognition for your learning journey.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Achievements</h1>
+          <p className="text-muted-foreground">
+            Track your progress and earn recognition for your learning journey.
+          </p>
+        </div>
+        
+        {user && (
+          <Button 
+            variant="outline" 
+            onClick={() => updateAchievements()} 
+            disabled={isUpdating}
+          >
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update Achievements
+          </Button>
+        )}
       </div>
 
       {/* Progress overview */}
@@ -126,6 +183,49 @@ export default function Achievements() {
           <span>{achievementProgress.percentage}%</span>
         </div>
         <Progress value={achievementProgress.percentage} className="h-2" />
+      </div>
+      
+      {/* Achievement Categories */}
+      <div className="bg-card p-4 rounded-lg border shadow-sm">
+        <h2 className="text-lg font-semibold mb-3">Achievement Categories</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+              <Book className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Reading</p>
+              <p className="text-xs text-muted-foreground">Complete reading articles</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+              <Trophy className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Quiz Performance</p>
+              <p className="text-xs text-muted-foreground">Get perfect scores on quizzes</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Streaks</p>
+              <p className="text-xs text-muted-foreground">Read articles consistently</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Points</p>
+              <p className="text-xs text-muted-foreground">Earn points from activities</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Earned achievements */}
@@ -138,7 +238,9 @@ export default function Achievements() {
                 key={achievement.id} 
                 className="bg-card border rounded-lg p-4 shadow-sm flex items-start gap-4"
               >
-                <div className="text-4xl flex-shrink-0">{achievement.icon_url}</div>
+                <div className="bg-primary/10 rounded-full p-3 text-primary flex-shrink-0">
+                  {getAchievementIcon(achievement.name)}
+                </div>
                 <div>
                   <h3 className="font-semibold">{achievement.name}</h3>
                   <p className="text-sm text-muted-foreground">{achievement.description}</p>
@@ -167,7 +269,9 @@ export default function Achievements() {
                 key={achievement.id} 
                 className="bg-secondary/30 border rounded-lg p-4 shadow-sm flex items-start gap-4 opacity-70"
               >
-                <div className="text-4xl flex-shrink-0">{achievement.icon_url}</div>
+                <div className="bg-muted rounded-full p-3 text-muted-foreground flex-shrink-0">
+                  {getAchievementIcon(achievement.name)}
+                </div>
                 <div>
                   <h3 className="font-semibold">{achievement.name}</h3>
                   <p className="text-sm text-muted-foreground">{achievement.criteria}</p>

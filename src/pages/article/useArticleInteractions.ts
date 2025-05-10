@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/supabase-auth';
 import { useToast } from '@/hooks/use-toast';
-import { saveArticleInteraction, getUserArticleInteraction } from '@/lib/api';
+import { saveArticleInteraction, getUserArticleInteraction, checkReaderAchievement } from '@/lib/api';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function useArticleInteractions(articleId: string | undefined) {
@@ -13,6 +13,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false);
+  const [earnedAchievement, setEarnedAchievement] = useState<string | null>(null);
 
   // Fetch user's interaction with this article
   const { 
@@ -51,8 +52,22 @@ export default function useArticleInteractions(articleId: string | undefined) {
         data.readTime ?? readingTimeInSeconds
       );
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       refetchInteraction();
+      
+      // Check for reader achievement
+      if (user && hasMarkedAsRead) {
+        const result = await checkReaderAchievement(user.id);
+        if (result && result.achievementEarned) {
+          setEarnedAchievement(result.achievementName);
+          
+          toast({
+            title: "Achievement Unlocked!",
+            description: `${result.achievementName}: ${result.achievementDesc}`,
+            variant: "success"
+          });
+        }
+      }
     },
     onError: (error) => {
       toast({
@@ -184,6 +199,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
     isUpdating,
     handleSaveToggle,
     updateInteraction,
-    hasMarkedAsRead
+    hasMarkedAsRead,
+    earnedAchievement
   };
 }
