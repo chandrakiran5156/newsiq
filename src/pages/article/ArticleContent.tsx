@@ -1,74 +1,15 @@
 
-import { useState, useEffect } from 'react';
 import { Article } from '@/types';
-import { useQuery } from '@tanstack/react-query';
-import { fetchUserPreferences } from '@/lib/api';
-import { useAuth } from '@/lib/supabase-auth';
 
-type ArticleContentProps = {
+interface ArticleContentProps {
   article: Article;
-  className?: string; // Added className as optional prop
-};
+  className?: string;
+}
 
-export default function ArticleContent({ article, className }: ArticleContentProps) {
-  const { user } = useAuth();
-  const [processedContent, setProcessedContent] = useState(article.summaryIntermediate || article.content);
-  
-  // Fetch user preferences for content display
-  const { data: preferences } = useQuery({
-    queryKey: ['user-preferences', user?.id],
-    queryFn: () => user ? fetchUserPreferences(user.id) : Promise.reject('No user'),
-    enabled: !!user,
-    meta: {
-      onError: (error: Error) => {
-        console.error('Failed to fetch user preferences:', error);
-      }
-    }
-  });
-
-  // Process content to remove summary prefixes and show appropriate content based on user preference
-  useEffect(() => {
-    // If no article content is available, set empty string
-    if (!article.summaryIntermediate && !article.content) {
-      setProcessedContent("");
-      return;
-    }
-
-    // Default to summaryIntermediate instead of content
-    let content = article.summaryIntermediate || article.content;
-    
-    // Remove all summary prefixes
-    content = content.replace(/summary_beginner:/gi, '');
-    content = content.replace(/summary_intermediate:/gi, '');
-    content = content.replace(/summary_advanced:/gi, '');
-    
-    // Check for user preference
-    if (user && preferences) {
-      const difficultyLevel = preferences.difficulty_level || 'intermediate';
-      
-      // Only show the summary appropriate for the user's skill level
-      if (difficultyLevel === 'beginner' && article.summaryBeginner) {
-        content = article.summaryBeginner;
-      } else if (difficultyLevel === 'intermediate' && article.summaryIntermediate) {
-        content = article.summaryIntermediate;
-      } else if (difficultyLevel === 'advanced' && article.summaryAdvanced) {
-        content = article.summaryAdvanced;
-      }
-      
-      // Remove any remaining summary labels
-      content = content.replace(/summary_beginner:/gi, '');
-      content = content.replace(/summary_intermediate:/gi, '');
-      content = content.replace(/summary_advanced:/gi, '');
-    }
-    
-    setProcessedContent(content);
-  }, [article.summaryIntermediate, article.content, article.summaryBeginner, article.summaryAdvanced, preferences, user]);
-
+export default function ArticleContent({ article, className = "" }: ArticleContentProps) {
   return (
-    <div 
-      id="article-content"
-      className={className || "prose prose-sm sm:prose max-w-none"}
-      dangerouslySetInnerHTML={{ __html: processedContent }}
-    />
+    <div id="article-content" className={className}>
+      <div dangerouslySetInnerHTML={{ __html: article.content }} />
+    </div>
   );
 }

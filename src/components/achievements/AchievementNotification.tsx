@@ -18,8 +18,7 @@ export function AchievementNotification({
   
   useEffect(() => {
     if (achievementName) {
-      toast({
-        // Changed the title from ReactElement to string
+      const { dismiss } = toast({
         title: "Achievement Unlocked!",
         description: (
           <div>
@@ -35,10 +34,14 @@ export function AchievementNotification({
           </div>
         ),
         duration: 5000,
-        onDismiss,
+        onOpenChange: (open) => {
+          if (!open) {
+            onDismiss();
+          }
+        }
       });
     }
-  }, [achievementName, achievementDescription]);
+  }, [achievementName, achievementDescription, onDismiss, toast]);
 
   return null;
 }

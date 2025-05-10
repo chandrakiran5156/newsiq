@@ -1087,3 +1087,78 @@ export async function updateAchievementsForExistingUsers() {
     return { error: String(error) };
   }
 }
+
+// New function: fetchRecommendedArticles
+export async function fetchRecommendedArticles(articleId: string, limit = 3) {
+  try {
+    console.log('Fetching recommended articles for:', articleId, 'limit:', limit);
+    
+    // Get the current article to find its category
+    const currentArticle = await fetchArticleById(articleId);
+    if (!currentArticle) {
+      throw new Error(`Article ${articleId} not found`);
+    }
+
+    // Fetch articles in the same category, excluding the current one
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('category', currentArticle.category)
+      .neq('id', articleId)
+      .order('published_at', { ascending: false })
+      .limit(limit);
+      
+    if (error) {
+      console.error('Error fetching recommended articles:', error);
+      throw new Error(error.message);
+    }
+    
+    if (data.length < limit) {
+      // If we don't have enough from same category, get some from other categories
+      const remainingCount = limit - data.length;
+      const { data: otherData, error: otherError } = await supabase
+        .from('articles')
+        .select('*')
+        .neq('id', articleId)
+        .neq('category', currentArticle.category)
+        .order('views_count', { ascending: false })
+        .limit(remainingCount);
+        
+      if (otherError) {
+        console.error('Error fetching additional recommended articles:', otherError);
+      } else if (otherData) {
+        data.push(...otherData);
+      }
+    }
+    
+    console.log(`Fetched ${data?.length || 0} recommended articles`);
+    return mapArray(data || [], mapDbArticleToArticle);
+  } catch (err) {
+    console.error('Error in fetchRecommendedArticles:', err);
+    return [];
+  }
+}
+
+// New function: checkQuizExistsByArticleId
+export async function checkQuizExistsByArticleId(articleId: string): Promise<boolean> {
+  try {
+    console.log('Checking if quiz exists for article:', articleId);
+    
+    const { count, error } = await supabase
+      .from('quizzes')
+      .select('*', { count: 'exact', head: true })
+      .eq('article_id', articleId);
+      
+    if (error) {
+      console.error('Error checking quiz existence:', error);
+      throw new Error(error.message);
+    }
+    
+    const exists = (count || 0) > 0;
+    console.log(`Quiz for article ${articleId} exists: ${exists}`);
+    return exists;
+  } catch (err) {
+    console.error('Error in checkQuizExistsByArticleId:', err);
+    return false;
+  }
+}

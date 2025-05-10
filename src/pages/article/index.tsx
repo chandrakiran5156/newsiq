@@ -82,14 +82,11 @@ export default function ArticlePage() {
             quizExists={quizExists}
             isQuizLoading={isQuizLoading}
           />
-          <ArticleContent 
-            article={article} 
-            className="prose lg:prose-lg dark:prose-invert mx-auto" 
-          />
+          <ArticleContent article={article} />
           <NextArticleNavigation articleId={article.id} />
         </div>
         <div className="lg:w-1/3 mt-6 lg:mt-0">
-          <ArticleChatPanel articleId={article.id} />
+          <ArticleChatPanel article={article} />
         </div>
       </div>
       

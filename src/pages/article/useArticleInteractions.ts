@@ -111,13 +111,14 @@ export default function useArticleInteractions(articleId: string | undefined) {
       });
       setHasMarkedAsRead(true);
       
-      // Show toast notification
+      // Show toast notification with correct variant
       toast({
         title: "Article marked as read",
         description: "You've spent enough time reading this article",
+        variant: "default"
       });
     }
-  }, [readingTimeInSeconds, articleId, user, hasMarkedAsRead, interaction?.isRead, updateInteraction]);
+  }, [readingTimeInSeconds, articleId, user, hasMarkedAsRead, interaction?.isRead, updateInteraction, toast]);
 
   // Track reading progress
   useEffect(() => {
@@ -187,6 +188,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
       description: interaction?.isSaved ? 
         "Article has been removed from your library" : 
         "Article has been saved to your library",
+      variant: "default"
     });
   };
 
