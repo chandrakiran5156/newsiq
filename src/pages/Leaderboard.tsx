@@ -4,16 +4,28 @@ import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard
 import { useAuth } from "@/lib/supabase-auth";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import { ArrowUp } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function Leaderboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Get user's position in the leaderboard
-  const { data: userPosition } = useQuery({
+  const { data: userPosition, isLoading: isLoadingPosition } = useQuery({
     queryKey: ['user-leaderboard-position', user?.id],
     queryFn: () => user ? fetchUserLeaderboardPosition(user.id) : Promise.reject('No user'),
     enabled: !!user,
   });
+
+  // Get leaderboard data to check if it's empty
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery({
+    queryKey: ['leaderboard', 'check-exists'],
+    queryFn: () => fetchLeaderboard(1),
+  });
+
+  const hasLeaderboardData = leaderboardData && leaderboardData.length > 0;
 
   return (
     <div className="space-y-6">
@@ -42,6 +54,19 @@ export default function Leaderboard() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* No data alert */}
+      {!hasLeaderboardData && !isLoadingLeaderboard && (
+        <Alert className="bg-muted/50">
+          <AlertTitle>No leaderboard data available</AlertTitle>
+          <AlertDescription>
+            <p className="mb-4">Complete quizzes to earn points and be the first to appear on the leaderboard!</p>
+            <Button onClick={() => navigate('/discover')}>
+              Discover Articles with Quizzes
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Leaderboard table */}

@@ -345,9 +345,15 @@ export async function submitQuizAttempt(
       throw new Error(attemptError.message);
     }
 
-    // Update leaderboard points - now points exactly equal to the quiz score
-    const pointsToAdd = score; // Points are now equal to the score (0-100)
-    await updateLeaderboardPoints(userId, pointsToAdd);
+    // Update leaderboard points - points exactly equal to the quiz score
+    const pointsToAdd = score; // Points are equal to the score (0-100)
+    const updateResult = await updateLeaderboardPoints(userId, pointsToAdd);
+    
+    if (!updateResult) {
+      console.error('Failed to update leaderboard points');
+    } else {
+      console.log(`Successfully added ${pointsToAdd} points to user ${userId}`);
+    }
 
     // Check and award achievements
     await checkQuizAchievements(userId);
@@ -713,52 +719,58 @@ function isYesterday(date1: string, date2: string) {
 
 async function updateLeaderboardPoints(userId: string, pointsToAdd: number) {
   try {
-    // Get current points
-    const { data: points, error: pointsError } = await supabase
+    console.log(`Updating leaderboard points for user ${userId}, adding ${pointsToAdd} points`);
+    
+    // Check if user exists in leaderboard_points
+    const { data: existingPoints, error: checkError } = await supabase
       .from('leaderboard_points')
-      .select('points, weekly_points, monthly_points')
+      .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (pointsError) {
-      console.error('Error fetching leaderboard points:', pointsError);
-      throw new Error(pointsError.message);
+    if (checkError) {
+      console.error('Error checking leaderboard points:', checkError);
+      return false;
     }
 
-    if (!points) {
-      console.log('No leaderboard points record found, creating initial record');
-      const { error } = await supabase
+    if (!existingPoints) {
+      console.log(`User ${userId} not found in leaderboard_points, creating new entry`);
+      // Create new entry if user doesn't exist
+      const { error: insertError } = await supabase
         .from('leaderboard_points')
         .insert({
           user_id: userId,
           points: pointsToAdd,
           weekly_points: pointsToAdd,
-          monthly_points: pointsToAdd
+          monthly_points: pointsToAdd,
+          last_updated: new Date().toISOString()
         });
         
-      if (error) {
-        console.error('Error creating initial leaderboard points:', error);
+      if (insertError) {
+        console.error('Error creating initial leaderboard points:', insertError);
+        return false;
       }
+      console.log(`Created new leaderboard entry for user ${userId} with ${pointsToAdd} points`);
       return true;
     }
 
     // Update all point categories - all-time, weekly, and monthly
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('leaderboard_points')
       .update({
-        points: (points.points || 0) + pointsToAdd,
-        weekly_points: (points.weekly_points || 0) + pointsToAdd,
-        monthly_points: (points.monthly_points || 0) + pointsToAdd,
+        points: (existingPoints.points || 0) + pointsToAdd,
+        weekly_points: (existingPoints.weekly_points || 0) + pointsToAdd,
+        monthly_points: (existingPoints.monthly_points || 0) + pointsToAdd,
         last_updated: new Date().toISOString()
       })
       .eq('user_id', userId);
 
-    if (error) {
-      console.error('Error updating leaderboard points:', error);
-      throw new Error(error.message);
+    if (updateError) {
+      console.error('Error updating leaderboard points:', updateError);
+      return false;
     }
 
-    console.log(`Added ${pointsToAdd} points to user ${userId}`);
+    console.log(`Successfully updated leaderboard points for user ${userId}`);
     return true;
   } catch (err) {
     console.error('Error in updateLeaderboardPoints:', err);

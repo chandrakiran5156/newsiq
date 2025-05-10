@@ -13,39 +13,74 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchLeaderboard, fetchWeeklyLeaderboard, fetchMonthlyLeaderboard } from "@/lib/api";
 import { Loader2, Trophy, Medal } from "lucide-react";
 import { useAuth } from "@/lib/supabase-auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LeaderboardTable() {
   const [period, setPeriod] = useState<"all-time" | "weekly" | "monthly">("all-time");
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // Fetch all-time leaderboard
-  const { data: allTimeLeaderboard, isLoading: isLoadingAllTime } = useQuery({
+  const { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime } = useQuery({
     queryKey: ['leaderboard', 'all-time'],
     queryFn: () => fetchLeaderboard(20),
+    staleTime: 60000, // Refresh every minute
+    refetchOnWindowFocus: true,
+    meta: {
+      onError: () => {
+        toast({
+          title: "Error loading leaderboard",
+          description: "Failed to load leaderboard data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   });
   
   // Fetch weekly leaderboard
-  const { data: weeklyLeaderboard, isLoading: isLoadingWeekly } = useQuery({
+  const { data: weeklyLeaderboard, isLoading: isLoadingWeekly, refetch: refetchWeekly } = useQuery({
     queryKey: ['leaderboard', 'weekly'],
     queryFn: () => fetchWeeklyLeaderboard(20),
+    staleTime: 60000, // Refresh every minute
+    refetchOnWindowFocus: true,
+    meta: {
+      onError: () => {
+        toast({
+          title: "Error loading weekly leaderboard",
+          description: "Failed to load weekly leaderboard data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   });
   
   // Fetch monthly leaderboard
-  const { data: monthlyLeaderboard, isLoading: isLoadingMonthly } = useQuery({
+  const { data: monthlyLeaderboard, isLoading: isLoadingMonthly, refetch: refetchMonthly } = useQuery({
     queryKey: ['leaderboard', 'monthly'],
     queryFn: () => fetchMonthlyLeaderboard(20),
+    staleTime: 60000, // Refresh every minute
+    refetchOnWindowFocus: true,
+    meta: {
+      onError: () => {
+        toast({
+          title: "Error loading monthly leaderboard",
+          description: "Failed to load monthly leaderboard data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   });
   
   const getLeaderboardData = () => {
     switch(period) {
       case "all-time":
-        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime };
       case "weekly":
-        return { data: weeklyLeaderboard, isLoading: isLoadingWeekly };
+        return { data: weeklyLeaderboard, isLoading: isLoadingWeekly, refetch: refetchWeekly };
       case "monthly":
-        return { data: monthlyLeaderboard, isLoading: isLoadingMonthly };
+        return { data: monthlyLeaderboard, isLoading: isLoadingMonthly, refetch: refetchMonthly };
       default:
-        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime };
     }
   };
   
@@ -120,7 +155,8 @@ function renderLeaderboardTable(
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        No leaderboard data available yet.
+        <p className="mb-2">No leaderboard data available yet.</p>
+        <p className="text-sm">Complete quizzes to earn points and appear on the leaderboard!</p>
       </div>
     );
   }
