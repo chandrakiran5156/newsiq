@@ -19,7 +19,7 @@ export default function ArticlePage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Add console logs to help debug why the article isn't loading
+  // Add detailed console logs to help debug why the article isn't loading
   console.log("Article page loaded with articleId:", articleId);
   
   const { data: article, isLoading, isError, error } = useQuery({
