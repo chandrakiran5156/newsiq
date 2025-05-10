@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchNextArticles } from '@/lib/api';
+import { fetchNextArticle } from '@/lib/api';
 import { ChevronRight } from 'lucide-react';
 
 export interface NextArticleNavigationProps {
@@ -33,18 +33,6 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
     },
     enabled: !!articleId,
   });
-
-  // Temporary function to fetch a single next article
-  // In a real app, this would be replaced with a proper API call
-  const fetchNextArticle = async (currentId: string) => {
-    // Use the existing API function (this only returns one article)
-    return await fetch(`/api/next-article/${currentId}`)
-      .then(res => res.json())
-      .catch(err => {
-        console.error("Error in fetchNextArticle:", err);
-        throw err;
-      });
-  };
 
   // Mock function to create additional articles for demonstration
   // In a real implementation, this would be replaced with actual API data
