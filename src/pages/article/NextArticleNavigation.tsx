@@ -1,8 +1,9 @@
 
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchNextArticle } from '@/lib/api';
+import { fetchRecommendedArticles } from '@/lib/api';
 import { ChevronRight } from 'lucide-react';
+import { Article } from '@/types';
 
 export interface NextArticleNavigationProps {
   articleId: string;
@@ -16,16 +17,10 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
     queryFn: async () => {
       console.log("Fetching next articles for:", articleId);
       try {
-        // In a production app, this would fetch multiple next articles from the API
-        // For now, we'll mock it by reusing the existing API
-        const firstArticle = await fetchNextArticle(articleId);
-        console.log("First next article fetch result:", firstArticle);
-        
-        // Mock additional articles by creating variations
-        // In a real app, you'd fetch these from the backend
-        const additionalArticles = mockAdditionalArticles(firstArticle, 4);
-        
-        return [firstArticle, ...additionalArticles];
+        // Fetch 5 recommended articles from the database
+        const articles = await fetchRecommendedArticles(articleId, 5);
+        console.log("Fetched recommended articles:", articles);
+        return articles;
       } catch (err) {
         console.error("Error fetching next articles:", err);
         throw err;
@@ -33,20 +28,6 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
     },
     enabled: !!articleId,
   });
-
-  // Mock function to create additional articles for demonstration
-  // In a real implementation, this would be replaced with actual API data
-  const mockAdditionalArticles = (baseArticle: any, count: number) => {
-    if (!baseArticle) return [];
-    
-    return Array.from({ length: count }).map((_, index) => {
-      return {
-        ...baseArticle,
-        id: `mock-${baseArticle.id}-${index}`,
-        title: `${baseArticle.title} - Variation ${index + 1}`,
-      };
-    });
-  };
 
   if (error) {
     console.error("Error in next article navigation:", error);
