@@ -51,16 +51,13 @@ export default function ArticleContent({ article, className = "" }: ArticleConte
   
   return (
     <div id="article-content" className={className}>
-      <div className="prose prose-sm md:prose-base max-w-none mb-6">
+      <div className="prose prose-sm md:prose-base max-w-none">
         {summaryContent ? (
           <p className="text-lg leading-relaxed">{summaryContent}</p>
         ) : (
           <p className="text-muted-foreground">No summary available for your difficulty level.</p>
         )}
       </div>
-      
-      {/* Display the full article content below the summary */}
-      <div dangerouslySetInnerHTML={{ __html: article.content }} />
     </div>
   );
 }
