@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -137,7 +136,7 @@ export default function ArticlePage() {
           
           <Separator />
           
-          {/* Article content */}
+          {/* Article content - now displays difficulty-specific summary */}
           <ArticleContent 
             article={article} 
             className="prose prose-sm md:prose-base max-w-none" 
