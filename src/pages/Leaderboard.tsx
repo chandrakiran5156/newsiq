@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard, fetchWeeklyLeaderboard } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
-import { ArrowUp, RefreshCcw, Trophy } from "lucide-react";
+import { RefreshCcw, Trophy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -127,32 +127,32 @@ export default function Leaderboard() {
             {/* 1st Place */}
             {topUsers.length > 0 && (
               <div className="flex flex-col items-center">
-                <Avatar className="h-20 w-20 border-2 border-yellow-400">
+                <Avatar className="h-20 w-20 border-2 border-purple-400">
                   <AvatarImage src={topUsers[0].avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${topUsers[0].username || '1st'}`} alt={topUsers[0].username} />
                   <AvatarFallback>{topUsers[0].username?.charAt(0) || '1'}</AvatarFallback>
                 </Avatar>
-                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-yellow-400 text-white font-bold -mt-4 mb-2">1</div>
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-purple-400 text-white font-bold -mt-4 mb-2">1</div>
                 <div className="text-center">
                   <p className="font-medium">{topUsers[0].username || 'User'}</p>
                   <p className="text-sm font-semibold">{topUsers[0].points} pts</p>
                 </div>
-                <div className="h-36 w-16 bg-gradient-to-t from-yellow-300 to-yellow-200 rounded-t-lg mt-2"></div>
+                <div className="h-36 w-16 bg-gradient-to-t from-purple-300 to-purple-200 rounded-t-lg mt-2"></div>
               </div>
             )}
 
             {/* 3rd Place */}
             {topUsers.length > 2 && (
               <div className="flex flex-col items-center">
-                <Avatar className="h-16 w-16 border-2 border-amber-600">
+                <Avatar className="h-16 w-16 border-2 border-blue-400">
                   <AvatarImage src={topUsers[2].avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${topUsers[2].username || '3rd'}`} alt={topUsers[2].username} />
                   <AvatarFallback>{topUsers[2].username?.charAt(0) || '3'}</AvatarFallback>
                 </Avatar>
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-600 text-white font-bold -mt-4 mb-2">3</div>
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-400 text-white font-bold -mt-4 mb-2">3</div>
                 <div className="text-center">
                   <p className="font-medium">{topUsers[2].username || 'User'}</p>
                   <p className="text-sm font-semibold">{topUsers[2].points} pts</p>
                 </div>
-                <div className="h-20 w-16 bg-gradient-to-t from-amber-300 to-amber-200 rounded-t-lg mt-2"></div>
+                <div className="h-20 w-16 bg-gradient-to-t from-blue-300 to-blue-200 rounded-t-lg mt-2"></div>
               </div>
             )}
           </div>

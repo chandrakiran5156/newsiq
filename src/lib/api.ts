@@ -471,7 +471,10 @@ export async function fetchLeaderboard(limit = 10) {
     const { data, error } = await supabase
       .from('leaderboard_view')
       .select('*')
+      .gt('points', 0)
       .order('points', { ascending: false })
+      .order('quizzes_taken', { ascending: false })
+      .order('avg_quiz_score', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -494,7 +497,10 @@ export async function fetchWeeklyLeaderboard(limit = 10) {
     const { data, error } = await supabase
       .from('leaderboard_view')
       .select('*')
+      .gt('weekly_points', 0)
       .order('weekly_points', { ascending: false })
+      .order('quizzes_taken', { ascending: false })
+      .order('avg_quiz_score', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -517,7 +523,10 @@ export async function fetchMonthlyLeaderboard(limit = 10) {
     const { data, error } = await supabase
       .from('leaderboard_view')
       .select('*')
+      .gt('monthly_points', 0)
       .order('monthly_points', { ascending: false })
+      .order('quizzes_taken', { ascending: false })
+      .order('avg_quiz_score', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -537,11 +546,14 @@ export async function fetchUserLeaderboardPosition(userId: string) {
   try {
     console.log('Fetching leaderboard position for user:', userId);
     
-    // First get all users ordered by points
+    // First get all users ordered by points, excluding users with 0 points
     const { data, error } = await supabase
       .from('leaderboard_view')
-      .select('id, points')
-      .order('points', { ascending: false });
+      .select('id, points, quizzes_taken, avg_quiz_score')
+      .gt('points', 0)
+      .order('points', { ascending: false })
+      .order('quizzes_taken', { ascending: false })
+      .order('avg_quiz_score', { ascending: false });
 
     if (error) {
       console.error('Error fetching leaderboard position:', error);

@@ -92,11 +92,11 @@ export default function LeaderboardTable({ refreshTrigger = 0 }: LeaderboardTabl
   const getRankStyles = (rank: number) => {
     switch(rank) {
       case 1:
-        return "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300";
+        return "bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300";
       case 2:
         return "bg-gray-100 dark:bg-gray-700/40 text-gray-800 dark:text-gray-300";
       case 3:
-        return "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300";
+        return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300";
       default:
         return "";
     }
@@ -105,11 +105,11 @@ export default function LeaderboardTable({ refreshTrigger = 0 }: LeaderboardTabl
   const getRankIcon = (rank: number) => {
     switch(rank) {
       case 1:
-        return <Trophy className="h-5 w-5 text-yellow-500" />;
+        return <Trophy className="h-5 w-5 text-purple-500" />;
       case 2:
         return <Medal className="h-5 w-5 text-gray-500" />;
       case 3:
-        return <Medal className="h-5 w-5 text-amber-600" />;
+        return <Medal className="h-5 w-5 text-blue-600" />;
       default:
         return <span className="font-medium">{rank}</span>;
     }
@@ -163,6 +163,24 @@ function renderLeaderboardTable(
       </div>
     );
   }
+  
+  // Filter out users with zero points and sort properly
+  const filteredData = data
+    .filter(entry => entry.points > 0 || entry.quizzes_taken > 0)
+    .sort((a, b) => {
+      // Primary sort by points
+      if (b.points !== a.points) {
+        return b.points - a.points;
+      }
+      
+      // Secondary sort by quizzes taken
+      if (b.quizzes_taken !== a.quizzes_taken) {
+        return b.quizzes_taken - a.quizzes_taken;
+      }
+      
+      // Tertiary sort by average score
+      return (b.avg_quiz_score || 0) - (a.avg_quiz_score || 0);
+    });
 
   return (
     <div>
@@ -177,7 +195,7 @@ function renderLeaderboardTable(
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((entry, index) => (
+          {filteredData.map((entry, index) => (
             <TableRow 
               key={entry.id}
               className={`${entry.id === currentUserId ? 'bg-primary/5' : ''} ${getRankStyles(index + 1)} transition-colors`}
@@ -186,9 +204,9 @@ function renderLeaderboardTable(
                 <div className="flex justify-center items-center">
                   {index < 3 ? (
                     <div className={`w-8 h-8 flex items-center justify-center rounded-full
-                      ${index === 0 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : 
+                      ${index === 0 ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 
                         index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-300' : 
-                          'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                          'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                       }`}
                     >
                       {getRankIcon(index + 1)}
