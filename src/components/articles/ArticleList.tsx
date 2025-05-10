@@ -9,15 +9,38 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ArticleListProps {
   articles: Article[];
+  isLoading?: boolean;
 }
 
-export default function ArticleList({ articles }: ArticleListProps) {
+export default function ArticleList({ articles, isLoading = false }: ArticleListProps) {
   const { user } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="border rounded-lg overflow-hidden animate-pulse h-24">
+            <div className="flex h-full">
+              <div className="w-24 bg-muted"></div>
+              <div className="flex-1 p-3">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  // Log articles for debugging
+  console.log("ArticleList rendering with:", articles?.length, "articles");
   
   if (!articles || articles.length === 0) {
     return (
-      <div className="text-center py-4">
+      <div className="text-center py-8 border rounded-lg">
         <p className="text-muted-foreground">No articles found</p>
+        <p className="text-sm text-muted-foreground mt-2">Try refreshing the page or check back later</p>
       </div>
     );
   }
@@ -36,7 +59,7 @@ export default function ArticleList({ articles }: ArticleListProps) {
       'education': '📚'
     };
     
-    return categoryIcons[category] || '📄';
+    return categoryIcons[category.toLowerCase()] || '📄';
   };
   
   return (

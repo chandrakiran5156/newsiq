@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchArticleById, checkQuizExistsByArticleId } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -17,17 +17,37 @@ import { AchievementNotification } from "@/components/achievements/AchievementNo
 export default function ArticlePage() {
   const { articleId } = useParams();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
-  const { data: article, isLoading, isError } = useQuery({
+  // Add console logs to help debug why the article isn't loading
+  console.log("Article page loaded with articleId:", articleId);
+  
+  const { data: article, isLoading, isError, error } = useQuery({
     queryKey: ["article", articleId],
-    queryFn: () => articleId ? fetchArticleById(articleId) : Promise.reject("No article ID"),
+    queryFn: () => {
+      console.log("Fetching article with ID:", articleId);
+      if (!articleId) return Promise.reject("No article ID");
+      return fetchArticleById(articleId);
+    },
     enabled: !!articleId,
+    retry: 1,
+    onError: (err) => {
+      console.error("Error fetching article:", err);
+    }
   });
 
+  // Log the article data when it changes
+  useEffect(() => {
+    console.log("Article data:", article);
+  }, [article]);
+  
   // Check if article has a quiz
   const { data: quizExists, isLoading: isQuizLoading } = useQuery({
     queryKey: ["quiz-exists", articleId],
-    queryFn: () => articleId ? checkQuizExistsByArticleId(articleId) : Promise.reject("No article ID"),
+    queryFn: () => {
+      if (!articleId) return Promise.reject("No article ID");
+      return checkQuizExistsByArticleId(articleId);
+    },
     enabled: !!articleId,
   });
 
@@ -37,7 +57,8 @@ export default function ArticlePage() {
     handleSaveToggle,
     earnedAchievement
   } = useArticleInteractions(articleId);
-
+  
+  // Redirect to NotFound page if there's an error fetching the article
   useEffect(() => {
     if (isError) {
       toast({
@@ -45,8 +66,16 @@ export default function ArticlePage() {
         description: "There was a problem loading the article. Please try again.",
         variant: "destructive",
       });
+      
+      // Redirect to NotFound with a more graceful UX
+      // Using a short timeout to allow the toast to be visible first
+      const timer = setTimeout(() => {
+        navigate("/not-found");
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isError, toast]);
+  }, [isError, toast, navigate]);
 
   if (isLoading) {
     return (
@@ -82,7 +111,7 @@ export default function ArticlePage() {
             quizExists={quizExists}
             isQuizLoading={isQuizLoading}
           />
-          <ArticleContent article={article} />
+          <ArticleContent article={article} className="prose prose-sm md:prose-base lg:prose-lg max-w-none" />
           <NextArticleNavigation articleId={article.id} />
         </div>
         <div className="lg:w-1/3 mt-6 lg:mt-0">
