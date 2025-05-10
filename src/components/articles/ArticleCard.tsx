@@ -28,7 +28,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
       'education': '📚'
     };
     
-    return categoryIcons[category] || '📄';
+    return categoryIcons[category.toLowerCase()] || '📄';
   };
   
   // Get user's reading time for this article
@@ -66,6 +66,8 @@ export default function ArticleCard({ article }: ArticleCardProps) {
       return `${roundedMinutes} min read`;
     }
   };
+  
+  console.log("Rendering ArticleCard with ID:", article.id);
   
   return (
     <div className="article-card animate-fade-in">

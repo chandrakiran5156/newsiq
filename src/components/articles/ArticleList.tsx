@@ -1,4 +1,3 @@
-
 import { Article } from '@/types';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,8 +32,9 @@ export default function ArticleList({ articles, isLoading = false }: ArticleList
     );
   }
   
-  // Log articles for debugging
+  // Debug: Log articles being rendered
   console.log("ArticleList rendering with:", articles?.length, "articles");
+  console.log("Sample article:", articles?.[0]);
   
   if (!articles || articles.length === 0) {
     return (

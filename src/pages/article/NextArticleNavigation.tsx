@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNextArticle } from '@/lib/api';
@@ -28,6 +27,8 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
   if (!nextArticle) {
     return null;
   }
+
+  console.log("Next article navigation rendering for:", articleId, "Next article:", nextArticle.id);
 
   return (
     <div className="border rounded-md p-4 mt-6">

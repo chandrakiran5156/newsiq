@@ -28,9 +28,9 @@ const NotFound = () => {
             Go Back
           </Button>
           <Button asChild className="flex items-center gap-2">
-            <Link to="/home">
+            <Link to="/discover">
               <Home className="h-4 w-4" />
-              Return to Home
+              Browse Articles
             </Link>
           </Button>
         </div>

@@ -15,7 +15,7 @@ import ArticleChatPanel from "@/components/article-chat/ArticleChatPanel";
 import { AchievementNotification } from "@/components/achievements/AchievementNotification";
 
 export default function ArticlePage() {
-  const { articleId } = useParams();
+  const { articleId } = useParams<{ articleId: string }>();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -24,18 +24,13 @@ export default function ArticlePage() {
   
   const { data: article, isLoading, isError, error } = useQuery({
     queryKey: ["article", articleId],
-    queryFn: () => {
+    queryFn: async () => {
       console.log("Fetching article with ID:", articleId);
-      if (!articleId) return Promise.reject("No article ID");
+      if (!articleId) throw new Error("No article ID provided");
       return fetchArticleById(articleId);
     },
     enabled: !!articleId,
-    retry: 1,
-    meta: {
-      onError: (err) => {
-        console.error("Error fetching article:", err);
-      }
-    }
+    retry: 1
   });
 
   // Log the article data when it changes
@@ -46,8 +41,8 @@ export default function ArticlePage() {
   // Check if article has a quiz
   const { data: quizExists, isLoading: isQuizLoading } = useQuery({
     queryKey: ["quiz-exists", articleId],
-    queryFn: () => {
-      if (!articleId) return Promise.reject("No article ID");
+    queryFn: async () => {
+      if (!articleId) throw new Error("No article ID provided");
       return checkQuizExistsByArticleId(articleId);
     },
     enabled: !!articleId,
@@ -63,6 +58,7 @@ export default function ArticlePage() {
   // Redirect to NotFound page if there's an error fetching the article
   useEffect(() => {
     if (isError) {
+      console.error("Error loading article:", error);
       toast({
         title: "Error loading article",
         description: "There was a problem loading the article. Please try again.",
@@ -77,7 +73,7 @@ export default function ArticlePage() {
       
       return () => clearTimeout(timer);
     }
-  }, [isError, toast, navigate]);
+  }, [isError, error, toast, navigate]);
 
   if (isLoading) {
     return (
