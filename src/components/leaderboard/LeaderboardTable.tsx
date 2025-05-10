@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { fetchLeaderboard, fetchWeeklyLeaderboard } from "@/lib/api";
+import { fetchLeaderboard, fetchWeeklyLeaderboard, fetchMonthlyLeaderboard } from "@/lib/api";
 import { Loader2, Trophy, Medal } from "lucide-react";
 import { useAuth } from "@/lib/supabase-auth";
 
 export default function LeaderboardTable() {
-  const [period, setPeriod] = useState<"all-time" | "weekly">("all-time");
+  const [period, setPeriod] = useState<"all-time" | "weekly" | "monthly">("all-time");
   const { user } = useAuth();
   
   // Fetch all-time leaderboard
@@ -30,8 +30,26 @@ export default function LeaderboardTable() {
     queryFn: () => fetchWeeklyLeaderboard(20),
   });
   
-  const isLoading = period === "all-time" ? isLoadingAllTime : isLoadingWeekly;
-  const leaderboardData = period === "all-time" ? allTimeLeaderboard : weeklyLeaderboard;
+  // Fetch monthly leaderboard
+  const { data: monthlyLeaderboard, isLoading: isLoadingMonthly } = useQuery({
+    queryKey: ['leaderboard', 'monthly'],
+    queryFn: () => fetchMonthlyLeaderboard(20),
+  });
+  
+  const getLeaderboardData = () => {
+    switch(period) {
+      case "all-time":
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
+      case "weekly":
+        return { data: weeklyLeaderboard, isLoading: isLoadingWeekly };
+      case "monthly":
+        return { data: monthlyLeaderboard, isLoading: isLoadingMonthly };
+      default:
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
+    }
+  };
+  
+  const { data: leaderboardData, isLoading } = getLeaderboardData();
   
   const getRankStyles = (rank: number) => {
     switch(rank) {
@@ -61,10 +79,11 @@ export default function LeaderboardTable() {
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="all-time" onValueChange={(value) => setPeriod(value as "all-time" | "weekly")}>
-        <TabsList className="grid grid-cols-2 w-full">
+      <Tabs defaultValue="all-time" onValueChange={(value) => setPeriod(value as "all-time" | "weekly" | "monthly")}>
+        <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="all-time">All Time</TabsTrigger>
           <TabsTrigger value="weekly">This Week</TabsTrigger>
+          <TabsTrigger value="monthly">This Month</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all-time">
@@ -73,6 +92,10 @@ export default function LeaderboardTable() {
         
         <TabsContent value="weekly">
           {renderLeaderboardTable(isLoadingWeekly, weeklyLeaderboard, getRankStyles, getRankIcon, user?.id)}
+        </TabsContent>
+
+        <TabsContent value="monthly">
+          {renderLeaderboardTable(isLoadingMonthly, monthlyLeaderboard, getRankStyles, getRankIcon, user?.id)}
         </TabsContent>
       </Tabs>
     </div>
@@ -110,8 +133,8 @@ function renderLeaderboardTable(
             <TableHead className="w-16">Rank</TableHead>
             <TableHead>User</TableHead>
             <TableHead className="text-right">Points</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">Articles</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">Streak</TableHead>
+            <TableHead className="hidden sm:table-cell text-right">Quizzes</TableHead>
+            <TableHead className="hidden sm:table-cell text-right">Avg Score</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,13 +161,13 @@ function renderLeaderboardTable(
                 </div>
               </TableCell>
               <TableCell className="text-right font-medium">
-                {entry.monthly_points ?? entry.points}
+                {entry.points}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-right">
-                {entry.articles_read || 0}
+                {entry.quizzes_taken || 0}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-right">
-                {entry.current_streak || 0} days
+                {entry.avg_quiz_score ? `${Math.round(entry.avg_quiz_score)}%` : 'N/A'}
               </TableCell>
             </TableRow>
           ))}

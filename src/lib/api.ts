@@ -345,8 +345,8 @@ export async function submitQuizAttempt(
       throw new Error(attemptError.message);
     }
 
-    // Update leaderboard points
-    const pointsToAdd = Math.round(score * 10); // 10 points per correct answer
+    // Update leaderboard points - now points exactly equal to the quiz score
+    const pointsToAdd = score; // Points are now equal to the score (0-100)
     await updateLeaderboardPoints(userId, pointsToAdd);
 
     // Check and award achievements
@@ -500,6 +500,29 @@ export async function fetchWeeklyLeaderboard(limit = 10) {
     return data;
   } catch (err) {
     console.error('Error in fetchWeeklyLeaderboard:', err);
+    throw err;
+  }
+}
+
+export async function fetchMonthlyLeaderboard(limit = 10) {
+  try {
+    console.log('Fetching monthly leaderboard, limit:', limit);
+    
+    const { data, error } = await supabase
+      .from('leaderboard_view')
+      .select('*')
+      .order('monthly_points', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching monthly leaderboard:', error);
+      throw new Error(error.message);
+    }
+
+    console.log(`Fetched ${data?.length || 0} monthly leaderboard entries`);
+    return data;
+  } catch (err) {
+    console.error('Error in fetchMonthlyLeaderboard:', err);
     throw err;
   }
 }
@@ -719,7 +742,7 @@ async function updateLeaderboardPoints(userId: string, pointsToAdd: number) {
       return true;
     }
 
-    // Update points
+    // Update all point categories - all-time, weekly, and monthly
     const { error } = await supabase
       .from('leaderboard_points')
       .update({

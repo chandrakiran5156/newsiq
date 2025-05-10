@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserAchievements, fetchAllAchievements, fetchUserLeaderboardPosition } from "@/lib/api";
@@ -211,7 +210,7 @@ export default function LeaderboardAndAchievements() {
                     You're ranked #{userPosition} on the leaderboard
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Keep reading and taking quizzes to climb higher!
+                    Keep taking quizzes to earn points and climb higher!
                   </p>
                 </div>
               </div>

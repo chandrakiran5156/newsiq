@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchUserLeaderboardPosition } from "@/lib/api";
+import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard, fetchWeeklyLeaderboard } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import { ArrowUp } from "lucide-react";
@@ -20,7 +20,7 @@ export default function Leaderboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
         <p className="text-muted-foreground">
-          See how you stack up against other learners in the NewsIQ community.
+          See how you stack up against other learners based on quiz points earned.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default function Leaderboard() {
                 You're ranked #{userPosition} on the leaderboard
               </p>
               <p className="text-sm text-muted-foreground">
-                Keep reading and taking quizzes to climb higher!
+                Keep taking quizzes to earn points and climb higher!
               </p>
             </div>
           </div>
