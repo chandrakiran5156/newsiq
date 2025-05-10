@@ -15,19 +15,23 @@ import { Loader2, Trophy, Medal } from "lucide-react";
 import { useAuth } from "@/lib/supabase-auth";
 import { useToast } from "@/hooks/use-toast";
 
-export default function LeaderboardTable() {
+interface LeaderboardTableProps {
+  refreshTrigger?: number;
+}
+
+export default function LeaderboardTable({ refreshTrigger = 0 }: LeaderboardTableProps) {
   const [period, setPeriod] = useState<"all-time" | "weekly" | "monthly">("all-time");
   const { user } = useAuth();
   const { toast } = useToast();
   
   // Fetch all-time leaderboard
-  const { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime } = useQuery({
-    queryKey: ['leaderboard', 'all-time'],
+  const { data: allTimeLeaderboard, isLoading: isLoadingAllTime } = useQuery({
+    queryKey: ['leaderboard', 'all-time', refreshTrigger],
     queryFn: () => fetchLeaderboard(20),
     staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
-      onError: () => {
+      onError: (error: any) => {
         toast({
           title: "Error loading leaderboard",
           description: "Failed to load leaderboard data. Please try again.",
@@ -38,13 +42,13 @@ export default function LeaderboardTable() {
   });
   
   // Fetch weekly leaderboard
-  const { data: weeklyLeaderboard, isLoading: isLoadingWeekly, refetch: refetchWeekly } = useQuery({
-    queryKey: ['leaderboard', 'weekly'],
+  const { data: weeklyLeaderboard, isLoading: isLoadingWeekly } = useQuery({
+    queryKey: ['leaderboard', 'weekly', refreshTrigger],
     queryFn: () => fetchWeeklyLeaderboard(20),
     staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
-      onError: () => {
+      onError: (error: any) => {
         toast({
           title: "Error loading weekly leaderboard",
           description: "Failed to load weekly leaderboard data. Please try again.",
@@ -55,13 +59,13 @@ export default function LeaderboardTable() {
   });
   
   // Fetch monthly leaderboard
-  const { data: monthlyLeaderboard, isLoading: isLoadingMonthly, refetch: refetchMonthly } = useQuery({
-    queryKey: ['leaderboard', 'monthly'],
+  const { data: monthlyLeaderboard, isLoading: isLoadingMonthly } = useQuery({
+    queryKey: ['leaderboard', 'monthly', refreshTrigger],
     queryFn: () => fetchMonthlyLeaderboard(20),
     staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
-      onError: () => {
+      onError: (error: any) => {
         toast({
           title: "Error loading monthly leaderboard",
           description: "Failed to load monthly leaderboard data. Please try again.",
@@ -74,17 +78,15 @@ export default function LeaderboardTable() {
   const getLeaderboardData = () => {
     switch(period) {
       case "all-time":
-        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime };
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
       case "weekly":
-        return { data: weeklyLeaderboard, isLoading: isLoadingWeekly, refetch: refetchWeekly };
+        return { data: weeklyLeaderboard, isLoading: isLoadingWeekly };
       case "monthly":
-        return { data: monthlyLeaderboard, isLoading: isLoadingMonthly, refetch: refetchMonthly };
+        return { data: monthlyLeaderboard, isLoading: isLoadingMonthly };
       default:
-        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime };
+        return { data: allTimeLeaderboard, isLoading: isLoadingAllTime };
     }
   };
-  
-  const { data: leaderboardData, isLoading } = getLeaderboardData();
   
   const getRankStyles = (rank: number) => {
     switch(rank) {

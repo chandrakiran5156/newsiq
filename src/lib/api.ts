@@ -539,8 +539,8 @@ export async function fetchUserLeaderboardPosition(userId: string) {
     
     // First get all users ordered by points
     const { data, error } = await supabase
-      .from('leaderboard_points')
-      .select('user_id, points')
+      .from('leaderboard_view')
+      .select('id, points')
       .order('points', { ascending: false });
 
     if (error) {
@@ -549,9 +549,9 @@ export async function fetchUserLeaderboardPosition(userId: string) {
     }
 
     // Find user's position
-    const position = data.findIndex(user => user.user_id === userId) + 1;
+    const position = data.findIndex(user => user.id === userId) + 1;
     console.log(`User ${userId} is at position ${position}`);
-    return position;
+    return position > 0 ? position : null;
   } catch (err) {
     console.error('Error in fetchUserLeaderboardPosition:', err);
     throw err;

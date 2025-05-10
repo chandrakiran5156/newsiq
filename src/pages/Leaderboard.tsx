@@ -17,7 +17,7 @@ export default function Leaderboard() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Get user's position in the leaderboard
-  const { data: userPosition, isLoading: isLoadingPosition } = useQuery({
+  const { data: userPosition, isLoading: isLoadingPosition, refetch: refetchPosition } = useQuery({
     queryKey: ['user-leaderboard-position', user?.id, refreshTrigger],
     queryFn: () => user ? fetchUserLeaderboardPosition(user.id) : Promise.reject('No user'),
     enabled: !!user,
@@ -25,7 +25,7 @@ export default function Leaderboard() {
   });
 
   // Get leaderboard data to check if it's empty
-  const { data: leaderboardData, isLoading: isLoadingLeaderboard, refetch } = useQuery({
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard, refetch: refetchLeaderboard } = useQuery({
     queryKey: ['leaderboard', 'check-exists', refreshTrigger],
     queryFn: () => fetchLeaderboard(1),
     staleTime: 30000, // Refresh every 30 seconds
@@ -48,7 +48,8 @@ export default function Leaderboard() {
       description: "Fetching the latest leaderboard data...",
     });
     setRefreshTrigger(prev => prev + 1);
-    refetch();
+    refetchLeaderboard();
+    refetchPosition();
   };
 
   return (
@@ -105,7 +106,7 @@ export default function Leaderboard() {
       )}
 
       {/* Leaderboard table */}
-      <LeaderboardTable />
+      <LeaderboardTable refreshTrigger={refreshTrigger} />
     </div>
   );
 }
