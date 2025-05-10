@@ -450,6 +450,7 @@ export type Database = {
           is_read: boolean | null
           is_saved: boolean | null
           read_progress: number | null
+          read_time: number | null
           user_id: string
         }
         Insert: {
@@ -459,6 +460,7 @@ export type Database = {
           is_read?: boolean | null
           is_saved?: boolean | null
           read_progress?: number | null
+          read_time?: number | null
           user_id: string
         }
         Update: {
@@ -468,6 +470,7 @@ export type Database = {
           is_read?: boolean | null
           is_saved?: boolean | null
           read_progress?: number | null
+          read_time?: number | null
           user_id?: string
         }
         Relationships: [

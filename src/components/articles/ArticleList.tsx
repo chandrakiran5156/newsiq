@@ -43,10 +43,10 @@ export default function ArticleList({ articles }: ArticleListProps) {
     <div className="space-y-4">
       {articles.map(article => {
         // Use a unique query for each article
-        const { data: readingTime = 0 } = useQuery({
+        const { data: readingTimeData } = useQuery({
           queryKey: ['articleReadingTime', article.id, user?.id],
           queryFn: async () => {
-            if (!user) return 0;
+            if (!user) return { read_time: 0 };
             
             const { data, error } = await supabase
               .from('user_article_interactions')
@@ -57,13 +57,16 @@ export default function ArticleList({ articles }: ArticleListProps) {
             
             if (error) {
               console.error('Error fetching reading time:', error);
-              return 0;
+              return { read_time: 0 };
             }
             
-            return data?.read_time || 0;
+            return { read_time: data?.read_time || 0 };
           },
           enabled: !!user,
         });
+        
+        // Get the reading time value from the query result
+        const readingTime = readingTimeData?.read_time || 0;
         
         // Format reading time display
         const getReadingTimeDisplay = () => {

@@ -32,10 +32,10 @@ export default function ArticleCard({ article }: ArticleCardProps) {
   };
   
   // Get user's reading time for this article
-  const { data: readingTime = 0 } = useQuery({
+  const { data: readingTimeData } = useQuery({
     queryKey: ['articleReadingTime', article.id, user?.id],
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) return { read_time: 0 };
       
       const { data, error } = await supabase
         .from('user_article_interactions')
@@ -46,13 +46,16 @@ export default function ArticleCard({ article }: ArticleCardProps) {
       
       if (error) {
         console.error('Error fetching reading time:', error);
-        return 0;
+        return { read_time: 0 };
       }
       
-      return data?.read_time || 0;
+      return { read_time: data?.read_time || 0 };
     },
     enabled: !!user,
   });
+  
+  // Get the reading time value from the query result
+  const readingTime = readingTimeData?.read_time || 0;
   
   // Format the reading time display
   const getReadingTimeDisplay = () => {
@@ -74,7 +77,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
             className="object-cover w-full h-full" 
           />
           <div className="absolute top-2 left-2 flex gap-2">
-            <span className="difficulty-badge difficulty-badge-beginner bg-black/50 text-white">
+            <span className="difficulty-badge bg-black/50 text-white">
               {getCategoryIcon(article.category)} {article.category}
             </span>
           </div>
