@@ -14,7 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase-auth';
-import { fetchArticleById, fetchQuizByArticleId, submitQuizAttempt } from '@/lib/api';
+import { fetchArticleById, fetchQuizByArticleId, submitQuizAttempt, saveArticleInteraction } from '@/lib/api';
 import { QuizQuestion } from '@/types';
 
 export default function QuizPage() {
@@ -28,6 +28,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<any[]>([]);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [markedAsRead, setMarkedAsRead] = useState(false);
 
   // Fetch article
   const { data: article, isLoading: isArticleLoading } = useQuery({
@@ -63,6 +64,26 @@ export default function QuizPage() {
       }
     }
   });
+
+  // Mark article as read when starting a quiz
+  useEffect(() => {
+    if (articleId && user && !markedAsRead && article) {
+      // Mark the article as read when a user views the quiz
+      saveArticleInteraction(
+        user.id,
+        articleId,
+        true, // is_read = true
+        false, // don't change is_saved status
+        0,
+        0
+      ).then(() => {
+        console.log(`Article ${articleId} marked as read because user started quiz`);
+        setMarkedAsRead(true);
+      }).catch(err => {
+        console.error('Error marking article as read:', err);
+      });
+    }
+  }, [articleId, user, article, markedAsRead]);
 
   // Submit quiz mutation
   const { mutate: submitQuiz, isPending: isSubmitting } = useMutation({

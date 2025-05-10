@@ -1,16 +1,17 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard, fetchWeeklyLeaderboard } from "@/lib/api";
+import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard, fetchWeeklyLeaderboard, fetchUserAchievements } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
-import { RefreshCcw, Trophy } from "lucide-react";
+import { RefreshCcw, Trophy, BookOpen } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function Leaderboard() {
   const { user } = useAuth();
@@ -39,8 +40,17 @@ export default function Leaderboard() {
     queryFn: () => fetchLeaderboard(3),
     staleTime: 30000, // Refresh every 30 seconds
   });
+  
+  // Fetch user's achievements
+  const { data: achievements } = useQuery({
+    queryKey: ['user-achievements', user?.id, refreshTrigger],
+    queryFn: () => user ? fetchUserAchievements(user.id) : Promise.reject('No user'),
+    enabled: !!user,
+    staleTime: 30000, // Refresh every 30 seconds
+  });
 
   const hasLeaderboardData = leaderboardData && leaderboardData.length > 0;
+  const hasReaderAchievement = achievements?.some(a => a.achievements?.name === 'Avid Reader');
 
   // Refresh the data periodically
   useEffect(() => {
@@ -80,6 +90,30 @@ export default function Leaderboard() {
           <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
+
+      {/* User's achievements */}
+      {user && achievements && achievements.length > 0 && (
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl">Your Achievements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {achievements.map((achievement) => (
+                <Badge key={achievement.id} variant="secondary" className="flex items-center gap-1 py-1.5 px-3">
+                  {achievement.achievements?.name === 'Avid Reader' && <BookOpen className="h-4 w-4" />}
+                  {achievement.achievements?.name === 'Streak Hunter' && <Trophy className="h-4 w-4" />}
+                  {achievement.achievements?.name === 'Quiz Master' && <BookOpen className="h-4 w-4" />}
+                  {achievement.achievements?.name}
+                </Badge>
+              ))}
+            </div>
+            {achievements.length === 0 && (
+              <p className="text-muted-foreground text-sm">Complete more activities to earn achievements!</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* User's position */}
       {user && userPosition && (

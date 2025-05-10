@@ -193,6 +193,12 @@ export async function saveArticleInteraction(
       });
 
     if (error) throw error;
+    
+    // If article was marked as read, check for achievements
+    if (isRead) {
+      await checkReaderAchievement(userId);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error saving article interaction:', error);
@@ -872,7 +878,38 @@ async function checkAndAwardAchievement(userId: string, achievementName: string)
   }
 }
 
-// Add the fetchNextArticle function to the existing api.ts file
+// Function to check and award the Reader achievement when an article is marked as read
+export async function checkReaderAchievement(userId: string) {
+  try {
+    // Count the number of articles the user has read
+    const { count, error: countError } = await supabase
+      .from('user_article_interactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', true);
+
+    if (countError) {
+      console.error('Error counting read articles:', countError);
+      return;
+    }
+
+    console.log(`User ${userId} has read ${count} articles`);
+    
+    // Award Reader achievement after reading 5 articles
+    if (count && count >= 5) {
+      await checkAndAwardAchievement(userId, 'Avid Reader');
+    }
+    
+    // Update reading streak when an article is read
+    await updateReadingStreak(userId);
+    
+    return { articlesRead: count };
+  } catch (err) {
+    console.error('Error in checkReaderAchievement:', err);
+    return { error: String(err) };
+  }
+}
+
 export const fetchNextArticle = async (currentArticleId: string): Promise<Article | null> => {
   try {
     // Get the current article to find its category

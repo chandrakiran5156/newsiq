@@ -12,6 +12,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
   const readingIntervalRef = useRef<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false);
 
   // Fetch user's interaction with this article
   const { 
@@ -84,6 +85,26 @@ export default function useArticleInteractions(articleId: string | undefined) {
     };
   }, [articleId, user, interaction]);
 
+  // Mark as read after 10 seconds of reading
+  useEffect(() => {
+    if (!articleId || !user || hasMarkedAsRead || (interaction?.isRead)) return;
+    
+    if (readingTimeInSeconds >= 10 && !hasMarkedAsRead) {
+      console.log(`Marking article ${articleId} as read after ${readingTimeInSeconds} seconds`);
+      updateInteraction({ 
+        isRead: true,
+        readTime: readingTimeInSeconds
+      });
+      setHasMarkedAsRead(true);
+      
+      // Show toast notification
+      toast({
+        title: "Article marked as read",
+        description: "You've spent enough time reading this article",
+      });
+    }
+  }, [readingTimeInSeconds, articleId, user, hasMarkedAsRead, interaction?.isRead, updateInteraction]);
+
   // Track reading progress
   useEffect(() => {
     if (!articleId || !user) return;
@@ -100,22 +121,20 @@ export default function useArticleInteractions(articleId: string | undefined) {
       
       // If user has scrolled more than 70% and has stayed for at least 10 seconds,
       // mark article as read
-      if (scrolled > 70) {
-        const timer = setTimeout(() => {
-          updateInteraction({ 
-            isRead: true, 
-            readProgress: Math.round(scrolled),
-            readTime: readingTimeInSeconds 
-          });
-        }, 10000); // 10 seconds
-        
-        return () => clearTimeout(timer);
+      if (scrolled > 70 && readingTimeInSeconds >= 10 && !hasMarkedAsRead && !interaction?.isRead) {
+        console.log(`Marking article ${articleId} as read after scrolling ${scrolled}% and reading for ${readingTimeInSeconds} seconds`);
+        updateInteraction({ 
+          isRead: true, 
+          readProgress: Math.round(scrolled),
+          readTime: readingTimeInSeconds 
+        });
+        setHasMarkedAsRead(true);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [articleId, user, readingTimeInSeconds]);
+  }, [articleId, user, readingTimeInSeconds, hasMarkedAsRead, interaction?.isRead]);
 
   // Update read progress and time less frequently to reduce database writes
   useEffect(() => {
@@ -164,6 +183,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
     isInteractionLoading,
     isUpdating,
     handleSaveToggle,
-    updateInteraction
+    updateInteraction,
+    hasMarkedAsRead
   };
 }
