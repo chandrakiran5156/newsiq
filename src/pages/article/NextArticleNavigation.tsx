@@ -11,14 +11,16 @@ export interface NextArticleNavigationProps {
 export default function NextArticleNavigation({ articleId }: NextArticleNavigationProps) {
   console.log("NextArticleNavigation rendering for articleId:", articleId);
   
-  const { data: nextArticle, isLoading, error } = useQuery({
-    queryKey: ['next-article', articleId],
+  const { data: nextArticles, isLoading, error } = useQuery({
+    queryKey: ['next-articles', articleId],
     queryFn: async () => {
-      console.log("Fetching next article for:", articleId);
+      console.log("Fetching next articles for:", articleId);
       try {
+        // For now, we're reusing the existing API but in a production app
+        // you might want to fetch multiple next articles
         const result = await fetchNextArticle(articleId);
         console.log("Next article fetch result:", result);
-        return result;
+        return [result]; // Wrap in array for now
       } catch (err) {
         console.error("Error fetching next article:", err);
         throw err;
@@ -34,38 +36,42 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
 
   if (isLoading) {
     return (
-      <div className="border rounded-md p-4 mt-6 animate-pulse">
-        <div className="h-4 bg-muted rounded w-1/4 mb-2"></div>
-        <div className="h-6 bg-muted rounded w-3/4"></div>
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="border rounded-md p-2 animate-pulse">
+            <div className="h-3 bg-muted rounded w-3/4 mb-1"></div>
+            <div className="h-2 bg-muted rounded w-1/2"></div>
+          </div>
+        ))}
       </div>
     );
   }
 
-  if (!nextArticle) {
-    console.log("No next article found for:", articleId);
+  if (!nextArticles || nextArticles.length === 0) {
+    console.log("No next articles found for:", articleId);
     return null;
   }
 
-  console.log("Next article navigation rendering for:", articleId, "Next article:", nextArticle.id);
-
   return (
-    <div className="border rounded-md p-4 mt-6">
-      <h3 className="text-sm text-muted-foreground mb-2">Continue reading</h3>
-      <Link 
-        to={`/article/${nextArticle.id}`} 
-        className="flex items-center justify-between group"
-        onClick={() => console.log("Navigating to next article:", nextArticle.id)}
-      >
-        <div>
-          <h4 className="font-medium group-hover:text-primary transition-colors">
-            {nextArticle.title}
-          </h4>
-          <p className="text-sm text-muted-foreground line-clamp-1">
-            {nextArticle.summaryBeginner || nextArticle.summary}
-          </p>
-        </div>
-        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-      </Link>
+    <div className="space-y-3">
+      {nextArticles.map(article => (
+        <Link 
+          key={article.id}
+          to={`/article/${article.id}`} 
+          className="border rounded-md p-3 flex items-center justify-between group hover:border-primary transition-colors block"
+          onClick={() => console.log("Navigating to next article:", article.id)}
+        >
+          <div>
+            <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+              {article.title}
+            </h4>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {article.category}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </Link>
+      ))}
     </div>
   );
 }

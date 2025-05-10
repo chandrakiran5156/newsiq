@@ -13,6 +13,7 @@ import ArticleActions from "./ArticleActions";
 import NextArticleNavigation from "./NextArticleNavigation";
 import ArticleChatPanel from "@/components/article-chat/ArticleChatPanel";
 import { AchievementNotification } from "@/components/achievements/AchievementNotification";
+import { Separator } from "@/components/ui/separator";
 
 export default function ArticlePage() {
   const { articleId } = useParams<{ articleId: string }>();
@@ -111,11 +112,14 @@ export default function ArticlePage() {
   }
 
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-6">
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="w-full space-y-6">
-          <ArticleHeader article={article} />
-          <ArticleImage article={article} />
+    <div className="container max-w-7xl mx-auto px-4 py-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Left column - Article Image */}
+        <div className="md:col-span-3 space-y-4">
+          <div className="rounded-lg overflow-hidden">
+            <ArticleImage article={article} />
+          </div>
+          
           <ArticleActions 
             isSaved={interaction?.isSaved || false}
             isRead={interaction?.isRead || false}
@@ -125,13 +129,27 @@ export default function ArticlePage() {
             quizExists={quizExists}
             isQuizLoading={isQuizLoading}
           />
-          <ArticleContent article={article} className="prose prose-sm md:prose-base lg:prose-lg max-w-none" />
+        </div>
+        
+        {/* Middle column - Article Content */}
+        <div className="md:col-span-7 space-y-6">
+          <ArticleHeader article={article} />
+          <Separator />
+          <ArticleContent article={article} className="prose prose-sm md:prose-base max-w-none" />
+          
+          {/* Chat panel integrated in the middle column */}
+          <div className="mt-6 border rounded-lg p-4">
+            <h3 className="text-lg font-medium mb-4">Chat about this article</h3>
+            <ArticleChatPanel article={article} />
+          </div>
+        </div>
+        
+        {/* Right column - Next Articles */}
+        <div className="md:col-span-2 space-y-4">
+          <h3 className="font-medium text-lg">Read Next</h3>
           <NextArticleNavigation articleId={article.id} />
         </div>
       </div>
-      
-      {/* Add the chat panel as a floating widget */}
-      <ArticleChatPanel article={article} />
       
       {earnedAchievement && (
         <AchievementNotification 

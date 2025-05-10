@@ -7,11 +7,11 @@ type ArticleImageProps = {
 
 export default function ArticleImage({ article }: ArticleImageProps) {
   return (
-    <div className="mb-6 rounded-lg overflow-hidden max-h-[250px]">
+    <div className="overflow-hidden">
       <img 
         src={article.imageUrl} 
         alt={article.title} 
-        className="w-full h-auto object-cover max-h-[250px]"
+        className="w-full h-auto object-cover"
         loading="eager" 
         fetchPriority="high" 
       />
