@@ -113,7 +113,7 @@ export default function ArticlePage() {
   return (
     <div className="container max-w-5xl mx-auto px-4 py-6">
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="lg:w-2/3 space-y-6">
+        <div className="w-full space-y-6">
           <ArticleHeader article={article} />
           <ArticleImage article={article} />
           <ArticleActions 
@@ -128,10 +128,10 @@ export default function ArticlePage() {
           <ArticleContent article={article} className="prose prose-sm md:prose-base lg:prose-lg max-w-none" />
           <NextArticleNavigation articleId={article.id} />
         </div>
-        <div className="lg:w-1/3 mt-6 lg:mt-0">
-          <ArticleChatPanel article={article} />
-        </div>
       </div>
+      
+      {/* Add the chat panel as a floating widget */}
+      <ArticleChatPanel article={article} />
       
       {earnedAchievement && (
         <AchievementNotification 
