@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Article } from '@/types';
@@ -13,6 +12,7 @@ import ArticleContent from './ArticleContent';
 import NextArticleNavigation from './NextArticleNavigation';
 import ArticleActions from './ArticleActions';
 import { Link } from 'react-router-dom';
+import { checkQuizExists } from '@/lib/quizHelpers';
 
 export default function ArticlePage() {
   const { id } = useParams<{ id: string }>();
@@ -80,22 +80,20 @@ export default function ArticlePage() {
     staleTime: 5 * 60 * 1000
   });
 
-  // Check if quiz exists for this article
+  // Check if quiz exists for this article using the direct Supabase function
   const { data: quizExists, isLoading: isQuizLoading } = useQuery({
     queryKey: ['quizExists', id],
     queryFn: async () => {
       if (!id) return false;
       try {
-        const response = await fetch(`/api/quizzes/check/${id}`);
-        if (!response.ok) return false;
-        const data = await response.json();
-        return !!data.exists;
+        return await checkQuizExists(id);
       } catch (error) {
         console.error('Error checking quiz existence:', error);
         return false;
       }
     },
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 60000 // Cache for 1 minute
   });
 
   const isSaved = interaction?.isSaved || false;

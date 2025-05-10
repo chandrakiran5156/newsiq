@@ -35,7 +35,7 @@ export default function ArticleHeader({ article }: ArticleHeaderProps) {
           <div className="flex items-center">
             {article.source && (
               <a 
-                href={article.source} 
+                href={typeof article.source === 'string' ? article.source : article.source.url} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="hover:underline hover:text-primary transition-colors"

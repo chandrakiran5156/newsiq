@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Bookmark, BookmarkCheck, Share } from 'lucide-react';
@@ -75,7 +74,7 @@ export default function ArticleActions({
             onClick={() => navigate(`/quiz/${articleId}`)}
             disabled={isQuizLoading || quizExists === false}
           >
-            {isQuizLoading ? "Checking..." : (quizExists ? "Take Quiz" : "No Quiz Available")}
+            {isQuizLoading ? "Checking..." : (quizExists === true ? "Take Quiz" : "No Quiz Available")}
           </Button>
         </div>
       </div>
