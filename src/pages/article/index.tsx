@@ -31,8 +31,10 @@ export default function ArticlePage() {
     },
     enabled: !!articleId,
     retry: 1,
-    onError: (err) => {
-      console.error("Error fetching article:", err);
+    meta: {
+      onError: (err) => {
+        console.error("Error fetching article:", err);
+      }
     }
   });
 

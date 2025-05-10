@@ -1,62 +1,65 @@
 
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Link } from "react-router-dom";
+import { Bookmark, BookmarkCheck, CheckCircle, PlayCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-type ArticleActionsProps = {
-  articleId: string;
+export interface ArticleActionsProps {
   isSaved: boolean;
-  isRead?: boolean; // Added isRead as optional prop
-  isUpdating?: boolean; // Made isUpdating optional
-  isQuizLoading?: boolean; // Added isQuizLoading as optional
-  quizExists?: boolean | undefined; // Added quizExists prop
+  isRead: boolean;
   onSaveToggle: () => void;
-};
+  isUpdating?: boolean;
+  articleId: string;
+  quizExists?: boolean;
+  isQuizLoading?: boolean;
+}
 
-export default function ArticleActions({ 
-  articleId,
+export default function ArticleActions({
   isSaved,
   isRead,
-  isUpdating,
-  isQuizLoading,
+  onSaveToggle,
+  isUpdating = false,
+  articleId,
   quizExists,
-  onSaveToggle
+  isQuizLoading = false,
 }: ArticleActionsProps) {
-  const navigate = useNavigate();
-  
   return (
-    <div className="sticky bottom-4 bg-background/95 backdrop-blur-md border border-border rounded-lg p-3 mt-8 z-20">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium hidden sm:block">
-          Found this article helpful?
-        </span>
-        <div className="flex gap-2 flex-wrap justify-end w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onSaveToggle}
-            disabled={isUpdating}
-          >
-            {isSaved ? (
-              <>
-                <BookmarkCheck size={16} className="mr-2 text-primary" /> Saved
-              </>
-            ) : (
-              <>
-                <Bookmark size={16} className="mr-2" /> Save
-              </>
-            )}
+    <div className="flex items-center justify-between border-t border-b py-3 my-4">
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "flex items-center gap-1",
+            isSaved && "text-primary"
+          )}
+          onClick={onSaveToggle}
+          disabled={isUpdating}
+        >
+          {isSaved ? (
+            <BookmarkCheck className="h-5 w-5" />
+          ) : (
+            <Bookmark className="h-5 w-5" />
+          )}
+          <span>{isSaved ? "Saved" : "Save"}</span>
+        </Button>
+
+        {isRead && (
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 text-primary" disabled>
+            <CheckCircle className="h-5 w-5" />
+            <span>Read</span>
           </Button>
-          <Button 
-            size="sm" 
-            onClick={() => navigate(`/quiz/${articleId}`)}
-            disabled={isQuizLoading || quizExists === false}
-          >
-            {isQuizLoading ? "Checking..." : (quizExists === true ? "Take Quiz" : "No Quiz Available")}
-          </Button>
-        </div>
+        )}
       </div>
+
+      {!isQuizLoading && quizExists && (
+        <Button asChild size="sm" variant="outline" className="flex items-center gap-1">
+          <Link to={`/quiz/${articleId}`}>
+            <PlayCircle className="h-5 w-5" />
+            <span>Take Quiz</span>
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }
