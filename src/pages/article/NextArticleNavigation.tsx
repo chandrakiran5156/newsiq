@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchNextArticle } from '@/lib/api';
+import { fetchNextArticles } from '@/lib/api';
 import { ChevronRight } from 'lucide-react';
 
 export interface NextArticleNavigationProps {
@@ -16,18 +16,49 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
     queryFn: async () => {
       console.log("Fetching next articles for:", articleId);
       try {
-        // For now, we're reusing the existing API but in a production app
-        // you might want to fetch multiple next articles
-        const result = await fetchNextArticle(articleId);
-        console.log("Next article fetch result:", result);
-        return [result]; // Wrap in array for now
+        // In a production app, this would fetch multiple next articles from the API
+        // For now, we'll mock it by reusing the existing API
+        const firstArticle = await fetchNextArticle(articleId);
+        console.log("First next article fetch result:", firstArticle);
+        
+        // Mock additional articles by creating variations
+        // In a real app, you'd fetch these from the backend
+        const additionalArticles = mockAdditionalArticles(firstArticle, 4);
+        
+        return [firstArticle, ...additionalArticles];
       } catch (err) {
-        console.error("Error fetching next article:", err);
+        console.error("Error fetching next articles:", err);
         throw err;
       }
     },
     enabled: !!articleId,
   });
+
+  // Temporary function to fetch a single next article
+  // In a real app, this would be replaced with a proper API call
+  const fetchNextArticle = async (currentId: string) => {
+    // Use the existing API function (this only returns one article)
+    return await fetch(`/api/next-article/${currentId}`)
+      .then(res => res.json())
+      .catch(err => {
+        console.error("Error in fetchNextArticle:", err);
+        throw err;
+      });
+  };
+
+  // Mock function to create additional articles for demonstration
+  // In a real implementation, this would be replaced with actual API data
+  const mockAdditionalArticles = (baseArticle: any, count: number) => {
+    if (!baseArticle) return [];
+    
+    return Array.from({ length: count }).map((_, index) => {
+      return {
+        ...baseArticle,
+        id: `mock-${baseArticle.id}-${index}`,
+        title: `${baseArticle.title} - Variation ${index + 1}`,
+      };
+    });
+  };
 
   if (error) {
     console.error("Error in next article navigation:", error);
@@ -37,7 +68,7 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="border rounded-md p-2 animate-pulse">
             <div className="h-3 bg-muted rounded w-3/4 mb-1"></div>
             <div className="h-2 bg-muted rounded w-1/2"></div>
@@ -49,7 +80,11 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
 
   if (!nextArticles || nextArticles.length === 0) {
     console.log("No next articles found for:", articleId);
-    return null;
+    return (
+      <div className="border rounded-md p-3">
+        <p className="text-sm text-muted-foreground">No related articles found</p>
+      </div>
+    );
   }
 
   return (
@@ -62,10 +97,10 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
           onClick={() => console.log("Navigating to next article:", article.id)}
         >
           <div>
-            <h4 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+            <h4 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors">
               {article.title}
             </h4>
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p className="text-xs text-muted-foreground">
               {article.category}
             </p>
           </div>

@@ -113,13 +113,18 @@ export default function ArticlePage() {
 
   return (
     <div className="container max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* Left column - Article Image */}
-        <div className="md:col-span-3 space-y-4">
-          <div className="rounded-lg overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Main content column - Takes 2/3 of the space */}
+        <div className="md:col-span-2 space-y-6">
+          {/* Article header with back button and title */}
+          <ArticleHeader article={article} />
+          
+          {/* Article image */}
+          <div className="max-w-2xl">
             <ArticleImage article={article} />
           </div>
           
+          {/* Actions (save, read, quiz) */}
           <ArticleActions 
             isSaved={interaction?.isSaved || false}
             isRead={interaction?.isRead || false}
@@ -129,23 +134,24 @@ export default function ArticlePage() {
             quizExists={quizExists}
             isQuizLoading={isQuizLoading}
           />
-        </div>
-        
-        {/* Middle column - Article Content */}
-        <div className="md:col-span-7 space-y-6">
-          <ArticleHeader article={article} />
-          <Separator />
-          <ArticleContent article={article} className="prose prose-sm md:prose-base max-w-none" />
           
-          {/* Chat panel integrated in the middle column */}
-          <div className="mt-6 border rounded-lg p-4">
+          <Separator />
+          
+          {/* Article content */}
+          <ArticleContent 
+            article={article} 
+            className="prose prose-sm md:prose-base max-w-none" 
+          />
+          
+          {/* Chat section */}
+          <div className="mt-8 border rounded-lg p-4">
             <h3 className="text-lg font-medium mb-4">Chat about this article</h3>
             <ArticleChatPanel article={article} />
           </div>
         </div>
         
-        {/* Right column - Next Articles */}
-        <div className="md:col-span-2 space-y-4">
+        {/* Sidebar - Takes 1/3 of the space */}
+        <div className="space-y-6">
           <h3 className="font-medium text-lg">Read Next</h3>
           <NextArticleNavigation articleId={article.id} />
         </div>
