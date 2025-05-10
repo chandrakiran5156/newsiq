@@ -11,7 +11,7 @@ type ArticleContentProps = {
 
 export default function ArticleContent({ article }: ArticleContentProps) {
   const { user } = useAuth();
-  const [processedContent, setProcessedContent] = useState(article.content);
+  const [processedContent, setProcessedContent] = useState(article.summaryIntermediate || article.content);
   
   // Fetch user preferences for content display
   const { data: preferences } = useQuery({
@@ -27,12 +27,14 @@ export default function ArticleContent({ article }: ArticleContentProps) {
 
   // Process content to remove summary prefixes and show appropriate content based on user preference
   useEffect(() => {
-    if (!article.content) {
+    // If no article content is available, set empty string
+    if (!article.summaryIntermediate && !article.content) {
       setProcessedContent("");
       return;
     }
 
-    let content = article.content;
+    // Default to summaryIntermediate instead of content
+    let content = article.summaryIntermediate || article.content;
     
     // Remove all summary prefixes
     content = content.replace(/summary_beginner:/gi, '');
@@ -59,7 +61,7 @@ export default function ArticleContent({ article }: ArticleContentProps) {
     }
     
     setProcessedContent(content);
-  }, [article.content, article.summaryBeginner, article.summaryIntermediate, article.summaryAdvanced, preferences, user]);
+  }, [article.summaryIntermediate, article.content, article.summaryBeginner, article.summaryAdvanced, preferences, user]);
 
   return (
     <div 
