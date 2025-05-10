@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { Article } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ChatMessage from './ChatMessage';
-import useArticleChat from '@/hooks/use-article-chat';
+import { useArticleChat } from '@/hooks/use-article-chat';
+import { useAuth } from '@/lib/supabase-auth';
 
 interface ArticleChatPanelProps {
   article: Article;
@@ -11,7 +13,8 @@ interface ArticleChatPanelProps {
 
 export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
   const [message, setMessage] = useState('');
-  const { messages, sendMessage, isLoading } = useArticleChat(article.id);
+  const { user } = useAuth();
+  const { messages, sendMessage, isLoading } = useArticleChat(article.id, article.title || '');
 
   const handleSendMessage = () => {
     if (message.trim() !== '') {
@@ -25,7 +28,7 @@ export default function ArticleChatPanel({ article }: ArticleChatPanelProps) {
       <h3 className="text-lg font-semibold mb-4">Chat about this article</h3>
       <div className="space-y-2">
         {messages.map((msg, index) => (
-          <ChatMessage key={index} message={msg} />
+          <ChatMessage key={index} message={msg} user={user} />
         ))}
       </div>
       <div className="mt-4 flex items-center space-x-2">
