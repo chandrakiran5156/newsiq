@@ -3,37 +3,72 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchUserLeaderboardPosition, fetchLeaderboard, fetchMonthlyLeaderboard, fetchWeeklyLeaderboard } from "@/lib/api";
 import { useAuth } from "@/lib/supabase-auth";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, RefreshCcw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Leaderboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Get user's position in the leaderboard
   const { data: userPosition, isLoading: isLoadingPosition } = useQuery({
-    queryKey: ['user-leaderboard-position', user?.id],
+    queryKey: ['user-leaderboard-position', user?.id, refreshTrigger],
     queryFn: () => user ? fetchUserLeaderboardPosition(user.id) : Promise.reject('No user'),
     enabled: !!user,
+    staleTime: 30000, // Refresh every 30 seconds
   });
 
   // Get leaderboard data to check if it's empty
-  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery({
-    queryKey: ['leaderboard', 'check-exists'],
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard, refetch } = useQuery({
+    queryKey: ['leaderboard', 'check-exists', refreshTrigger],
     queryFn: () => fetchLeaderboard(1),
+    staleTime: 30000, // Refresh every 30 seconds
   });
 
   const hasLeaderboardData = leaderboardData && leaderboardData.length > 0;
 
+  // Refresh the data periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 60000); // Refresh every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualRefresh = () => {
+    toast({
+      title: "Refreshing leaderboard",
+      description: "Fetching the latest leaderboard data...",
+    });
+    setRefreshTrigger(prev => prev + 1);
+    refetch();
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
-        <p className="text-muted-foreground">
-          See how you stack up against other learners based on quiz points earned.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
+          <p className="text-muted-foreground">
+            See how you stack up against other learners based on quiz points earned.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleManualRefresh}
+          className="flex items-center gap-1"
+        >
+          <RefreshCcw className="h-4 w-4" />
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
       </div>
 
       {/* User's position */}

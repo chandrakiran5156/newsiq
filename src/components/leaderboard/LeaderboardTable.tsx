@@ -24,7 +24,7 @@ export default function LeaderboardTable() {
   const { data: allTimeLeaderboard, isLoading: isLoadingAllTime, refetch: refetchAllTime } = useQuery({
     queryKey: ['leaderboard', 'all-time'],
     queryFn: () => fetchLeaderboard(20),
-    staleTime: 60000, // Refresh every minute
+    staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
       onError: () => {
@@ -41,7 +41,7 @@ export default function LeaderboardTable() {
   const { data: weeklyLeaderboard, isLoading: isLoadingWeekly, refetch: refetchWeekly } = useQuery({
     queryKey: ['leaderboard', 'weekly'],
     queryFn: () => fetchWeeklyLeaderboard(20),
-    staleTime: 60000, // Refresh every minute
+    staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
       onError: () => {
@@ -58,7 +58,7 @@ export default function LeaderboardTable() {
   const { data: monthlyLeaderboard, isLoading: isLoadingMonthly, refetch: refetchMonthly } = useQuery({
     queryKey: ['leaderboard', 'monthly'],
     queryFn: () => fetchMonthlyLeaderboard(20),
-    staleTime: 60000, // Refresh every minute
+    staleTime: 30000, // Refresh every 30 seconds
     refetchOnWindowFocus: true,
     meta: {
       onError: () => {
@@ -187,17 +187,17 @@ function renderLeaderboardTable(
               <TableCell>
                 <div className="flex items-center gap-2">
                   <img
-                    src={entry.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${entry.username}`}
-                    alt={entry.username}
+                    src={entry.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${entry.username || 'User'}`}
+                    alt={entry.username || 'User'}
                     className="h-8 w-8 rounded-full"
                   />
                   <div>
-                    <div className="font-medium">{entry.username}</div>
+                    <div className="font-medium">{entry.username || 'Anonymous User'}</div>
                   </div>
                 </div>
               </TableCell>
               <TableCell className="text-right font-medium">
-                {entry.points}
+                {entry.points || 0}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-right">
                 {entry.quizzes_taken || 0}
