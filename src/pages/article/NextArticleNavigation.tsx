@@ -9,11 +9,28 @@ export interface NextArticleNavigationProps {
 }
 
 export default function NextArticleNavigation({ articleId }: NextArticleNavigationProps) {
-  const { data: nextArticle, isLoading } = useQuery({
+  console.log("NextArticleNavigation rendering for articleId:", articleId);
+  
+  const { data: nextArticle, isLoading, error } = useQuery({
     queryKey: ['next-article', articleId],
-    queryFn: () => fetchNextArticle(articleId),
+    queryFn: async () => {
+      console.log("Fetching next article for:", articleId);
+      try {
+        const result = await fetchNextArticle(articleId);
+        console.log("Next article fetch result:", result);
+        return result;
+      } catch (err) {
+        console.error("Error fetching next article:", err);
+        throw err;
+      }
+    },
     enabled: !!articleId,
   });
+
+  if (error) {
+    console.error("Error in next article navigation:", error);
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -25,6 +42,7 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
   }
 
   if (!nextArticle) {
+    console.log("No next article found for:", articleId);
     return null;
   }
 
@@ -36,6 +54,7 @@ export default function NextArticleNavigation({ articleId }: NextArticleNavigati
       <Link 
         to={`/article/${nextArticle.id}`} 
         className="flex items-center justify-between group"
+        onClick={() => console.log("Navigating to next article:", nextArticle.id)}
       >
         <div>
           <h4 className="font-medium group-hover:text-primary transition-colors">

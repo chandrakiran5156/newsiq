@@ -19,15 +19,31 @@ export default function ArticlePage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Add detailed console logs to help debug why the article isn't loading
+  // Add comprehensive debugging logs
   console.log("Article page loaded with articleId:", articleId);
   
-  const { data: article, isLoading, isError, error } = useQuery({
+  const { 
+    data: article, 
+    isLoading, 
+    isError, 
+    error 
+  } = useQuery({
     queryKey: ["article", articleId],
     queryFn: async () => {
       console.log("Fetching article with ID:", articleId);
-      if (!articleId) throw new Error("No article ID provided");
-      return fetchArticleById(articleId);
+      if (!articleId) {
+        console.error("No article ID provided in URL params");
+        throw new Error("No article ID provided");
+      }
+      
+      try {
+        const articleData = await fetchArticleById(articleId);
+        console.log("Article data fetched:", articleData);
+        return articleData;
+      } catch (err) {
+        console.error("Error fetching article:", err);
+        throw err;
+      }
     },
     enabled: !!articleId,
     retry: 1
@@ -35,7 +51,7 @@ export default function ArticlePage() {
 
   // Log the article data when it changes
   useEffect(() => {
-    console.log("Article data:", article);
+    console.log("Article data in component:", article);
   }, [article]);
   
   // Check if article has a quiz
@@ -69,7 +85,7 @@ export default function ArticlePage() {
       // Using a short timeout to allow the toast to be visible first
       const timer = setTimeout(() => {
         navigate("/not-found");
-      }, 500);
+      }, 1500);
       
       return () => clearTimeout(timer);
     }

@@ -72,7 +72,7 @@ const AppRoutes = () => {
           <MainLayout><HomePage /></MainLayout>
         </ProtectedRoute>
       } />
-      <Route path="/article/:id" element={
+      <Route path="/article/:articleId" element={
         <ProtectedRoute>
           <MainLayout><ArticlePage /></MainLayout>
         </ProtectedRoute>
