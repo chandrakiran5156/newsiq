@@ -40,7 +40,7 @@ export default function ArticleHeader({ article }: ArticleHeaderProps) {
                 rel="noopener noreferrer" 
                 className="hover:underline hover:text-primary transition-colors"
               >
-                Source Article
+                View Original Article
               </a>
             )}
           </div>

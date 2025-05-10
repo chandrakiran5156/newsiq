@@ -174,70 +174,29 @@ export async function fetchArticlesByUserPreference(userId: string, limit = 100)
 export async function saveArticleInteraction(
   userId: string, 
   articleId: string, 
-  isRead = false, 
-  isSaved = false,
-  readProgress = 0
+  isRead: boolean,
+  isSaved: boolean,
+  readProgress: number = 0,
+  readTime: number = 0
 ) {
   try {
-    console.log('Saving article interaction:', { userId, articleId, isRead, isSaved, readProgress });
-    
-    // Check if interaction exists
-    const { data: existing, error: checkError } = await supabase
-      .from('user_article_interactions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('article_id', articleId)
-      .maybeSingle();
+    const { error } = await supabase.from('user_article_interactions')
+      .upsert({
+        user_id: userId,
+        article_id: articleId,
+        is_read: isRead,
+        is_saved: isSaved,
+        read_progress: readProgress,
+        read_time: readTime
+      }, {
+        onConflict: 'user_id,article_id'
+      });
 
-    if (checkError) {
-      console.error('Error checking article interaction:', checkError);
-      throw new Error(checkError.message);
-    }
-
-    if (existing) {
-      // Update existing interaction
-      const { error } = await supabase
-        .from('user_article_interactions')
-        .update({
-          is_read: isRead,
-          is_saved: isSaved,
-          read_progress: readProgress,
-          interacted_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
-
-      if (error) {
-        console.error('Error updating article interaction:', error);
-        throw new Error(error.message);
-      }
-    } else {
-      // Insert new interaction
-      const { error } = await supabase
-        .from('user_article_interactions')
-        .insert({
-          user_id: userId,
-          article_id: articleId,
-          is_read: isRead,
-          is_saved: isSaved,
-          read_progress: readProgress
-        });
-
-      if (error) {
-        console.error('Error saving article interaction:', error);
-        throw new Error(error.message);
-      }
-    }
-
-    // If marked as read, update user reading streak
-    if (isRead) {
-      await updateReadingStreak(userId);
-    }
-
-    console.log('Article interaction saved successfully');
+    if (error) throw error;
     return true;
-  } catch (err) {
-    console.error('Error in saveArticleInteraction:', err);
-    throw err;
+  } catch (error) {
+    console.error('Error saving article interaction:', error);
+    throw error;
   }
 }
 

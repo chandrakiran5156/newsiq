@@ -1,12 +1,15 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/supabase-auth';
 import { useToast } from '@/hooks/use-toast';
 import { saveArticleInteraction, getUserArticleInteraction } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function useArticleInteractions(articleId: string | undefined) {
   const [readingProgress, setReadingProgress] = useState(0);
+  const [readingTimeInSeconds, setReadingTimeInSeconds] = useState(0);
+  const readingIntervalRef = useRef<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -31,14 +34,20 @@ export default function useArticleInteractions(articleId: string | undefined) {
     mutate: updateInteraction, 
     isPending: isUpdating 
   } = useMutation({
-    mutationFn: (data: { isRead?: boolean; isSaved?: boolean; readProgress?: number }) => {
+    mutationFn: (data: { 
+      isRead?: boolean; 
+      isSaved?: boolean; 
+      readProgress?: number;
+      readTime?: number;
+    }) => {
       if (!user || !articleId) return Promise.reject('Not authenticated or no article ID');
       return saveArticleInteraction(
         user.id, 
         articleId, 
         data.isRead ?? interaction?.isRead ?? false,
         data.isSaved ?? interaction?.isSaved ?? false,
-        data.readProgress ?? readingProgress
+        data.readProgress ?? readingProgress,
+        data.readTime ?? readingTimeInSeconds
       );
     },
     onSuccess: () => {
@@ -52,6 +61,28 @@ export default function useArticleInteractions(articleId: string | undefined) {
       });
     }
   });
+
+  // Start tracking reading time when component mounts
+  useEffect(() => {
+    if (!articleId || !user) return;
+    
+    // Set initial reading time from database if available
+    if (interaction?.read_time) {
+      setReadingTimeInSeconds(interaction.read_time);
+    }
+    
+    // Start a timer that increments reading time every second
+    readingIntervalRef.current = window.setInterval(() => {
+      setReadingTimeInSeconds(prevTime => prevTime + 1);
+    }, 1000);
+    
+    // Clean up interval when unmounting
+    return () => {
+      if (readingIntervalRef.current) {
+        window.clearInterval(readingIntervalRef.current);
+      }
+    };
+  }, [articleId, user, interaction]);
 
   // Track reading progress
   useEffect(() => {
@@ -71,7 +102,11 @@ export default function useArticleInteractions(articleId: string | undefined) {
       // mark article as read
       if (scrolled > 70) {
         const timer = setTimeout(() => {
-          updateInteraction({ isRead: true, readProgress: Math.round(scrolled) });
+          updateInteraction({ 
+            isRead: true, 
+            readProgress: Math.round(scrolled),
+            readTime: readingTimeInSeconds 
+          });
         }, 10000); // 10 seconds
         
         return () => clearTimeout(timer);
@@ -80,21 +115,36 @@ export default function useArticleInteractions(articleId: string | undefined) {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [articleId, user]);
+  }, [articleId, user, readingTimeInSeconds]);
 
-  // Update read progress less frequently to reduce database writes
+  // Update read progress and time less frequently to reduce database writes
   useEffect(() => {
     if (!articleId || !user) return;
     
     // Update read progress every 60 seconds instead of 30 seconds
     const timer = setInterval(() => {
       if (readingProgress > 0) {
-        updateInteraction({ readProgress: Math.round(readingProgress) });
+        updateInteraction({ 
+          readProgress: Math.round(readingProgress),
+          readTime: readingTimeInSeconds 
+        });
       }
     }, 60000);
     
     return () => clearInterval(timer);
-  }, [readingProgress, articleId, user]);
+  }, [readingProgress, articleId, user, readingTimeInSeconds]);
+
+  // Save reading time when user leaves the page
+  useEffect(() => {
+    if (!articleId || !user) return;
+    
+    const handleBeforeUnload = () => {
+      updateInteraction({ readTime: readingTimeInSeconds });
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [articleId, user, readingTimeInSeconds]);
 
   const handleSaveToggle = () => {
     updateInteraction({ isSaved: !(interaction?.isSaved) });
@@ -109,6 +159,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
 
   return {
     readingProgress,
+    readingTimeInSeconds,
     interaction,
     isInteractionLoading,
     isUpdating,

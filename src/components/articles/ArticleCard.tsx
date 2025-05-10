@@ -3,12 +3,17 @@ import { Article } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { BookmarkPlus, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/lib/supabase-auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ArticleCardProps {
   article: Article;
 }
 
 export default function ArticleCard({ article }: ArticleCardProps) {
+  const { user } = useAuth();
+  
   // Get category icon based on category name
   const getCategoryIcon = (category: string) => {
     const categoryIcons: Record<string, string> = {
@@ -26,6 +31,39 @@ export default function ArticleCard({ article }: ArticleCardProps) {
     return categoryIcons[category] || '📄';
   };
   
+  // Get user's reading time for this article
+  const { data: readingTime = 0 } = useQuery({
+    queryKey: ['articleReadingTime', article.id, user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      
+      const { data, error } = await supabase
+        .from('user_article_interactions')
+        .select('read_time')
+        .eq('article_id', article.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching reading time:', error);
+        return 0;
+      }
+      
+      return data?.read_time || 0;
+    },
+    enabled: !!user,
+  });
+  
+  // Format the reading time display
+  const getReadingTimeDisplay = () => {
+    if (readingTime === 0) {
+      return 'New';
+    } else {
+      const roundedMinutes = Math.ceil(readingTime / 60); // Convert seconds to minutes and round up
+      return `${roundedMinutes} min read`;
+    }
+  };
+  
   return (
     <div className="article-card animate-fade-in">
       <Link to={`/article/${article.id}`} className="block">
@@ -40,11 +78,6 @@ export default function ArticleCard({ article }: ArticleCardProps) {
               {getCategoryIcon(article.category)} {article.category}
             </span>
           </div>
-          <div className="absolute top-2 right-2">
-            <span className={`difficulty-badge difficulty-badge-${article.difficultyLevel}`}>
-              {article.difficultyLevel}
-            </span>
-          </div>
         </div>
         <div className="p-3">
           <h3 className="font-semibold line-clamp-2 mb-2">{article.title}</h3>
@@ -54,7 +87,11 @@ export default function ArticleCard({ article }: ArticleCardProps) {
           <div className="flex justify-between items-center mt-3">
             <div className="flex items-center text-xs text-muted-foreground">
               <Clock size={14} className="mr-1" />
-              <span>{article.readTime} min read</span>
+              {readingTime === 0 ? (
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">New</span>
+              ) : (
+                <span>{getReadingTimeDisplay()}</span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
