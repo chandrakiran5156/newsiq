@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUserAchievements, fetchAllAchievements, fetchUserLeaderboardPosition, updateAchievementsForExistingUsers } from "@/lib/api";
@@ -85,7 +84,7 @@ export default function LeaderboardAndAchievements() {
         toast({
           title: "Achievements Updated",
           description: `Updated achievements for ${result.updated} users`,
-          variant: "success"
+          variant: "default"
         });
         // Refetch user achievements
         refetchUserAchievements();

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchUserAchievements, fetchAllAchievements, updateAchievementsForExistingUsers } from "@/lib/api";
@@ -49,7 +48,7 @@ export default function Achievements() {
       toast({
         title: "Achievements Updated",
         description: `Updated achievements for ${data.updated} users`,
-        variant: "success"
+        variant: "default" // Changed from "success" to "default"
       });
       refetchAchievements();
     },

@@ -19,17 +19,16 @@ export function AchievementNotification({
   useEffect(() => {
     if (achievementName) {
       toast({
-        title: (
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
-              <Award className="h-4 w-4 text-primary" />
-            </div>
-            <span>Achievement Unlocked!</span>
-          </div>
-        ),
+        // Changed the title from ReactElement to string
+        title: "Achievement Unlocked!",
         description: (
           <div>
-            <p className="font-medium">{achievementName}</p>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <Award className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-medium">{achievementName}</span>
+            </div>
             {achievementDescription && (
               <p className="text-sm text-muted-foreground">{achievementDescription}</p>
             )}

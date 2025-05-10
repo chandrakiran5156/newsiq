@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/supabase-auth';
@@ -64,7 +63,7 @@ export default function useArticleInteractions(articleId: string | undefined) {
           toast({
             title: "Achievement Unlocked!",
             description: `${result.achievementName}: ${result.achievementDesc}`,
-            variant: "success"
+            variant: "default"
           });
         }
       }

@@ -7,9 +7,10 @@ import { useAuth } from '@/lib/supabase-auth';
 
 type ArticleContentProps = {
   article: Article;
+  className?: string; // Added className as optional prop
 };
 
-export default function ArticleContent({ article }: ArticleContentProps) {
+export default function ArticleContent({ article, className }: ArticleContentProps) {
   const { user } = useAuth();
   const [processedContent, setProcessedContent] = useState(article.summaryIntermediate || article.content);
   
@@ -66,7 +67,7 @@ export default function ArticleContent({ article }: ArticleContentProps) {
   return (
     <div 
       id="article-content"
-      className="prose prose-sm sm:prose max-w-none"
+      className={className || "prose prose-sm sm:prose max-w-none"}
       dangerouslySetInnerHTML={{ __html: processedContent }}
     />
   );

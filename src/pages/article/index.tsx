@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchArticleById } from "@/lib/api";
+import { fetchArticleById, checkQuizExistsByArticleId } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import useArticleInteractions from "./useArticleInteractions";
@@ -21,6 +21,13 @@ export default function ArticlePage() {
   const { data: article, isLoading, isError } = useQuery({
     queryKey: ["article", articleId],
     queryFn: () => articleId ? fetchArticleById(articleId) : Promise.reject("No article ID"),
+    enabled: !!articleId,
+  });
+
+  // Check if article has a quiz
+  const { data: quizExists, isLoading: isQuizLoading } = useQuery({
+    queryKey: ["quiz-exists", articleId],
+    queryFn: () => articleId ? checkQuizExistsByArticleId(articleId) : Promise.reject("No article ID"),
     enabled: !!articleId,
   });
 
@@ -70,8 +77,10 @@ export default function ArticlePage() {
             isSaved={interaction?.isSaved || false}
             isRead={interaction?.isRead || false}
             onSaveToggle={handleSaveToggle}
-            isLoading={isInteractionLoading}
+            isUpdating={isInteractionLoading}
             articleId={article.id}
+            quizExists={quizExists}
+            isQuizLoading={isQuizLoading}
           />
           <ArticleContent 
             article={article} 

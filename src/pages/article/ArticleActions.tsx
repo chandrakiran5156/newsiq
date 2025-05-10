@@ -7,15 +7,17 @@ import { useToast } from '@/hooks/use-toast';
 type ArticleActionsProps = {
   articleId: string;
   isSaved: boolean;
-  isUpdating: boolean;
-  isQuizLoading: boolean;
-  quizExists: boolean | undefined;
+  isRead?: boolean; // Added isRead as optional prop
+  isUpdating?: boolean; // Made isUpdating optional
+  isQuizLoading?: boolean; // Added isQuizLoading as optional
+  quizExists?: boolean | undefined; // Added quizExists prop
   onSaveToggle: () => void;
 };
 
 export default function ArticleActions({ 
   articleId,
   isSaved,
+  isRead,
   isUpdating,
   isQuizLoading,
   quizExists,
