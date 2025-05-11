@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,14 +9,31 @@ import {
   MessageSquare, 
   Headphones, 
   Brain, 
-  Home, 
   Info, 
   DollarSign, 
   Phone, 
   Users 
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function LandingPage() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Handle scroll event to change navbar appearance
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      if (scrollPosition > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -28,32 +44,31 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Header Navigation */}
-      <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-50 border-b border-border/40">
+      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        isScrolled ? 'bg-background/80 backdrop-blur-md border-b border-border/40' : 'bg-transparent'
+      }`}>
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
               <span className="text-xl font-bold">News<span className="text-primary">IQ</span></span>
             </Link>
             
-            <nav className="hidden md:flex items-center space-x-6">
-              <button onClick={() => scrollToSection('home')} className="text-sm font-medium hover:text-primary transition-colors">
-                <Home size={16} className="inline mr-1" /> Home
-              </button>
+            <nav className="hidden md:flex items-center space-x-6 ml-auto">
               <button onClick={() => scrollToSection('features')} className="text-sm font-medium hover:text-primary transition-colors">
                 <Info size={16} className="inline mr-1" /> Features
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium hover:text-primary transition-colors">
-                <DollarSign size={16} className="inline mr-1" /> Pricing
               </button>
               <button onClick={() => scrollToSection('testimonials')} className="text-sm font-medium hover:text-primary transition-colors">
                 <Users size={16} className="inline mr-1" /> Testimonials
               </button>
+              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium hover:text-primary transition-colors">
+                <DollarSign size={16} className="inline mr-1" /> Pricing
+              </button>
+            </nav>
+            
+            <div className="flex items-center space-x-4 ml-6">
               <Link to="/contact" className="text-sm font-medium hover:text-primary transition-colors">
                 <Phone size={16} className="inline mr-1" /> Contact
               </Link>
-            </nav>
-            
-            <div className="flex items-center space-x-2">
               <Button asChild size="sm">
                 <Link to="/auth">Get Started</Link>
               </Button>
@@ -84,7 +99,7 @@ export default function LandingPage() {
             </div>
             <div className="hidden md:block">
               <img 
-                src="/lovable-uploads/ea419535-49ef-41d8-9234-d7b803da9426.png" 
+                src="/lovable-uploads/2cf273c4-1a34-4690-8407-e1fe77fa3d30.png" 
                 alt="NewsIQ Digital News Platform" 
                 className="rounded-lg shadow-xl animate-fade-in"
               />
@@ -93,7 +108,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Key Benefits Section (New) */}
+      {/* Key Benefits Section */}
       <section className="py-12 bg-background border-b border-border/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
@@ -190,7 +205,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Technology Showcase (New) */}
+      {/* Technology Showcase */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -289,7 +304,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Mobile Experience (New) */}
+      {/* Mobile Experience */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
