@@ -4,7 +4,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Import Supabase JS client - using a specific import that's compatible with Deno
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook/8fc953a0-0903-4303-854f-158eefeaa634";
+// Updated webhook URL as requested by user
+const N8N_WEBHOOK_URL = "https://webhook.site/090a2e79-9dff-40b9-b0bd-dd34bb7c7fa7";
 const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
 // Add service role key for bypassing RLS
@@ -111,8 +112,8 @@ serve(async (req) => {
       console.log('Successfully saved user message to database');
     }
 
-    // Prepare data for n8n
-    const n8nPayload = {
+    // Prepare data for webhook
+    const webhookPayload = {
       userMessage,
       articleContext: {
         title: articleData.title,
@@ -124,45 +125,45 @@ serve(async (req) => {
       isVoice
     };
 
-    // Construct webhook URL (make sure we're using the updated URL)
-    const webhookUrl = `https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f?sessionId=${sessionId}`;
-    console.log('Sending request to n8n webhook:', webhookUrl);
+    // Updated webhook URL construction
+    const webhookUrl = `${N8N_WEBHOOK_URL}?sessionId=${sessionId}`;
+    console.log('Sending request to webhook:', webhookUrl);
     
     let assistantMessage;
     let n8nResponseStatus = 0;
     
     try {
-      // Send request to n8n webhook
-      const n8nResponse = await fetch(webhookUrl, {
+      // Send request to webhook
+      const webhookResponse = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(n8nPayload),
+        body: JSON.stringify(webhookPayload),
       });
       
-      n8nResponseStatus = n8nResponse.status;
-      console.log(`n8n response status: ${n8nResponseStatus}`);
+      n8nResponseStatus = webhookResponse.status;
+      console.log(`Webhook response status: ${n8nResponseStatus}`);
 
-      if (!n8nResponse.ok) {
-        const errorText = await n8nResponse.text();
-        console.error(`Error from n8n (status ${n8nResponse.status}):`, errorText);
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        console.error(`Error from webhook (status ${webhookResponse.status}):`, errorText);
         
         // Use fallback response instead of failing
         assistantMessage = generateFallbackResponse(articleData, userMessage);
       } else {
         // Try to parse JSON response, fall back to text if not valid JSON
-        let responseText = await n8nResponse.text();
-        console.log(`n8n raw response: ${responseText.substring(0, 300)}...`);
+        let responseText = await webhookResponse.text();
+        console.log(`Webhook raw response: ${responseText.substring(0, 300)}...`);
         
         try {
           // Try to parse as JSON
           const responseData = JSON.parse(responseText);
           assistantMessage = responseData.message || responseData.response || responseData.answer || 
             "I'm not sure how to respond to that.";
-          console.log('Successfully parsed JSON response from n8n');
+          console.log('Successfully parsed JSON response from webhook');
         } catch (jsonError) {
-          console.error('Failed to parse JSON from n8n, using response as plain text');
+          console.error('Failed to parse JSON from webhook, using response as plain text');
           // If not valid JSON but has content, use the text response directly
           if (responseText && responseText.length > 5) {
             assistantMessage = responseText;
@@ -172,7 +173,7 @@ serve(async (req) => {
         }
       }
     } catch (error) {
-      console.error('Error communicating with n8n:', error);
+      console.error('Error communicating with webhook:', error);
       
       // Use fallback response for any network or other errors
       assistantMessage = generateFallbackResponse(articleData, userMessage);
@@ -194,7 +195,7 @@ serve(async (req) => {
       console.log('Successfully saved assistant message to database');
     }
 
-    // Include n8n status in response for debugging
+    // Include webhook status in response for debugging
     return new Response(
       JSON.stringify({ 
         message: assistantMessage, 
