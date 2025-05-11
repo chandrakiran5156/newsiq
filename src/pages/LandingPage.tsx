@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,23 +51,23 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold">News<span className="text-primary">IQ</span></span>
+              <span className={`text-xl font-bold ${!isScrolled ? 'text-white' : ''}`}>News<span className="text-primary">IQ</span></span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-6 ml-auto">
-              <button onClick={() => scrollToSection('features')} className="text-sm font-medium hover:text-primary transition-colors">
+              <button onClick={() => scrollToSection('features')} className={`text-sm font-medium hover:text-primary transition-colors ${!isScrolled ? 'text-white' : ''}`}>
                 <Info size={16} className="inline mr-1" /> Features
               </button>
-              <button onClick={() => scrollToSection('testimonials')} className="text-sm font-medium hover:text-primary transition-colors">
+              <button onClick={() => scrollToSection('testimonials')} className={`text-sm font-medium hover:text-primary transition-colors ${!isScrolled ? 'text-white' : ''}`}>
                 <Users size={16} className="inline mr-1" /> Testimonials
               </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium hover:text-primary transition-colors">
+              <button onClick={() => scrollToSection('pricing')} className={`text-sm font-medium hover:text-primary transition-colors ${!isScrolled ? 'text-white' : ''}`}>
                 <DollarSign size={16} className="inline mr-1" /> Pricing
               </button>
             </nav>
             
             <div className="flex items-center space-x-4 ml-6">
-              <Link to="/contact" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link to="/contact" className={`text-sm font-medium hover:text-primary transition-colors ${!isScrolled ? 'text-white' : ''}`}>
                 <Phone size={16} className="inline mr-1" /> Contact
               </Link>
               <Button asChild size="sm">
