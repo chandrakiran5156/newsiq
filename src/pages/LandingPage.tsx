@@ -2,13 +2,68 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, Star, Trophy, BookOpen, Clock, Search } from 'lucide-react';
+import { 
+  Check, 
+  Star, 
+  Trophy, 
+  BookOpen, 
+  MessageSquare, 
+  Headphones, 
+  Brain, 
+  Home, 
+  Info, 
+  DollarSign, 
+  Phone, 
+  Users 
+} from 'lucide-react';
 
 export default function LandingPage() {
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen">
+      {/* Header Navigation */}
+      <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md z-50 border-b border-border/40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center">
+              <span className="text-xl font-bold">News<span className="text-primary">IQ</span></span>
+            </Link>
+            
+            <nav className="hidden md:flex items-center space-x-6">
+              <button onClick={() => scrollToSection('home')} className="text-sm font-medium hover:text-primary transition-colors">
+                <Home size={16} className="inline mr-1" /> Home
+              </button>
+              <button onClick={() => scrollToSection('features')} className="text-sm font-medium hover:text-primary transition-colors">
+                <Info size={16} className="inline mr-1" /> Features
+              </button>
+              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium hover:text-primary transition-colors">
+                <DollarSign size={16} className="inline mr-1" /> Pricing
+              </button>
+              <button onClick={() => scrollToSection('testimonials')} className="text-sm font-medium hover:text-primary transition-colors">
+                <Users size={16} className="inline mr-1" /> Testimonials
+              </button>
+              <Link to="/contact" className="text-sm font-medium hover:text-primary transition-colors">
+                <Phone size={16} className="inline mr-1" /> Contact
+              </Link>
+            </nav>
+            
+            <div className="flex items-center space-x-2">
+              <Button asChild size="sm">
+                <Link to="/auth">Get Started</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <header className="bg-gradient-to-r from-primary/90 to-violet-600 text-white">
+      <section id="home" className="bg-gradient-to-r from-primary/90 to-violet-600 text-white pt-24">
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -22,21 +77,68 @@ export default function LandingPage() {
                 <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-100">
                   <Link to="/auth">Get Started</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
-                  <Link to="#features">Learn More</Link>
+                <Button asChild variant="secondary" size="lg" className="bg-violet-700/60 text-white hover:bg-violet-700/80 border-white/20">
+                  <button onClick={() => scrollToSection('features')}>Learn More</button>
                 </Button>
               </div>
             </div>
             <div className="hidden md:block">
               <img 
-                src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=800&auto=format&fit=crop" 
-                alt="NewsIQ App" 
-                className="rounded-lg shadow-xl"
+                src="/lovable-uploads/ea419535-49ef-41d8-9234-d7b803da9426.png" 
+                alt="NewsIQ Digital News Platform" 
+                className="rounded-lg shadow-xl animate-fade-in"
               />
             </div>
           </div>
         </div>
-      </header>
+      </section>
+
+      {/* Key Benefits Section (New) */}
+      <section className="py-12 bg-background border-b border-border/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
+            <div className="flex flex-col items-center text-center p-4 hover:bg-accent/50 rounded-lg transition-colors">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <BookOpen size={28} />
+              </div>
+              <h3 className="font-medium mb-1">Personalized Content</h3>
+              <p className="text-muted-foreground text-sm">Tailored to your interests</p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center p-4 hover:bg-accent/50 rounded-lg transition-colors">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <Brain size={28} />
+              </div>
+              <h3 className="font-medium mb-1">AI Summarization</h3>
+              <p className="text-muted-foreground text-sm">Complex topics made simple</p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center p-4 hover:bg-accent/50 rounded-lg transition-colors">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <MessageSquare size={28} />
+              </div>
+              <h3 className="font-medium mb-1">Chat Interface</h3>
+              <p className="text-muted-foreground text-sm">Ask questions about articles</p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center p-4 hover:bg-accent/50 rounded-lg transition-colors">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <Headphones size={28} />
+              </div>
+              <h3 className="font-medium mb-1">Audio Features</h3>
+              <p className="text-muted-foreground text-sm">Listen and interact by voice</p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center p-4 hover:bg-accent/50 rounded-lg transition-colors">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                <Trophy size={28} />
+              </div>
+              <h3 className="font-medium mb-1">Gamified Learning</h3>
+              <p className="text-muted-foreground text-sm">Learn through quizzes and rewards</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Features Section */}
       <section id="features" className="py-16 bg-background">
@@ -49,7 +151,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card>
+            <Card className="hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <BookOpen size={24} />
@@ -61,7 +163,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <Trophy size={24} />
@@ -73,14 +175,14 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Search size={24} />
+                  <MessageSquare size={24} />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Smart Discovery</h3>
+                <h3 className="text-xl font-semibold mb-2">Smart Conversations</h3>
                 <p className="text-muted-foreground">
-                  Find new topics and interests with our intelligent recommendation system that grows with you.
+                  Have natural conversations about article content to deepen your understanding and find additional context.
                 </p>
               </CardContent>
             </Card>
@@ -88,8 +190,61 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Technology Showcase (New) */}
       <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <img 
+                src="/lovable-uploads/30c6a5f0-00d3-441b-b498-beac4b09c5b3.png" 
+                alt="News Technology Showcase" 
+                className="rounded-lg shadow-xl"
+              />
+            </div>
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-4">AI-Powered News Experience</h2>
+              <p className="text-lg mb-6">
+                NewsIQ combines cutting-edge AI with intuitive design to transform how you consume news.
+              </p>
+              
+              <ul className="space-y-4">
+                <li className="flex items-start">
+                  <div className="mr-4 mt-1 bg-primary/20 p-1 rounded-full">
+                    <Brain size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Adaptive Difficulty</h3>
+                    <p className="text-muted-foreground">Content automatically adjusts to your knowledge level, from beginner to advanced.</p>
+                  </div>
+                </li>
+                
+                <li className="flex items-start">
+                  <div className="mr-4 mt-1 bg-primary/20 p-1 rounded-full">
+                    <MessageSquare size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Conversational Interface</h3>
+                    <p className="text-muted-foreground">Ask questions and get immediate answers about any article's content.</p>
+                  </div>
+                </li>
+                
+                <li className="flex items-start">
+                  <div className="mr-4 mt-1 bg-primary/20 p-1 rounded-full">
+                    <Headphones size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Voice Interaction</h3>
+                    <p className="text-muted-foreground">Listen to articles and interact with content using natural voice commands.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
@@ -99,7 +254,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-6">
+            <div className="text-center p-6 hover:bg-accent/20 rounded-lg transition-all">
               <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
                 1
               </div>
@@ -107,7 +262,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground">Create your account and tell us your interests</p>
             </div>
 
-            <div className="text-center p-6">
+            <div className="text-center p-6 hover:bg-accent/20 rounded-lg transition-all">
               <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
                 2
               </div>
@@ -115,7 +270,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground">Discover personalized content tailored to your preferences</p>
             </div>
 
-            <div className="text-center p-6">
+            <div className="text-center p-6 hover:bg-accent/20 rounded-lg transition-all">
               <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
                 3
               </div>
@@ -123,7 +278,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground">Test your knowledge and earn points</p>
             </div>
 
-            <div className="text-center p-6">
+            <div className="text-center p-6 hover:bg-accent/20 rounded-lg transition-all">
               <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
                 4
               </div>
@@ -134,8 +289,53 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Mobile Experience (New) */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="order-2 md:order-1 space-y-6">
+              <h2 className="text-3xl font-bold mb-4">News Wherever You Go</h2>
+              <p className="text-lg mb-6">
+                Access your personalized news experience on any device, anytime, anywhere.
+              </p>
+              
+              <ul className="space-y-3">
+                <li className="flex items-center">
+                  <Check size={20} className="text-primary mr-2 flex-shrink-0" />
+                  <span>Seamless synchronization across all your devices</span>
+                </li>
+                <li className="flex items-center">
+                  <Check size={20} className="text-primary mr-2 flex-shrink-0" />
+                  <span>Offline reading mode for on-the-go access</span>
+                </li>
+                <li className="flex items-center">
+                  <Check size={20} className="text-primary mr-2 flex-shrink-0" />
+                  <span>Voice commands for hands-free operation</span>
+                </li>
+                <li className="flex items-center">
+                  <Check size={20} className="text-primary mr-2 flex-shrink-0" />
+                  <span>Adjustable text size and reading modes</span>
+                </li>
+              </ul>
+              
+              <Button asChild className="mt-4">
+                <Link to="/auth">Try for Free</Link>
+              </Button>
+            </div>
+            
+            <div className="order-1 md:order-2">
+              <img 
+                src="/lovable-uploads/981bfbee-b217-43f5-9a43-b658db3122f0.png" 
+                alt="NewsIQ Mobile Experience" 
+                className="rounded-lg shadow-xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
-      <section className="py-16 bg-background">
+      <section id="testimonials" className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">What Our Users Say</h2>
@@ -145,7 +345,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card>
+            <Card className="border-border hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="flex text-amber-400">
@@ -169,7 +369,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="border-border hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="flex text-amber-400">
@@ -193,7 +393,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="border-border hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="flex text-amber-400">
@@ -221,7 +421,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-16 bg-muted/30">
+      <section id="pricing" className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Simple Pricing</h2>
@@ -231,7 +431,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="border-border">
+            <Card className="border-border hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-medium mb-1">Basic</h3>
@@ -254,7 +454,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card className="border-primary relative">
+            <Card className="border-primary relative hover:shadow-xl transition-all duration-300 scale-[1.02]">
               <div className="absolute top-0 right-0 bg-primary text-white px-3 py-1 text-xs font-medium rounded-bl-lg rounded-tr-lg">
                 POPULAR
               </div>
@@ -280,7 +480,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             
-            <Card className="border-border">
+            <Card className="border-border hover:shadow-lg transition-all duration-300">
               <CardContent className="pt-6">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-medium mb-1">Team</h3>
@@ -355,8 +555,8 @@ export default function LandingPage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Product</h3>
               <ul className="space-y-2">
-                <li><Link to="#" className="text-muted-foreground hover:text-foreground">Features</Link></li>
-                <li><Link to="#" className="text-muted-foreground hover:text-foreground">Pricing</Link></li>
+                <li><Link to="#features" className="text-muted-foreground hover:text-foreground">Features</Link></li>
+                <li><Link to="#pricing" className="text-muted-foreground hover:text-foreground">Pricing</Link></li>
                 <li><Link to="#" className="text-muted-foreground hover:text-foreground">API</Link></li>
                 <li><Link to="#" className="text-muted-foreground hover:text-foreground">Integrations</Link></li>
               </ul>
