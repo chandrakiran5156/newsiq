@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Import Supabase JS client - using a specific import that's compatible with Deno
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const N8N_WEBHOOK_BASE_URL = "https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f";
+const N8N_WEBHOOK_URL = "https://ckproductspace.app.n8n.cloud/webhook/8fc953a0-0903-4303-854f-158eefeaa634";
 const SUPABASE_URL = "https://grouwquojmflxkqlwukz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyb3V3cXVvam1mbHhrcWx3dWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxOTUyODIsImV4cCI6MjA2MTc3MTI4Mn0.Hp9J1HWhFUPY-xYHKf_mh2ZIMVUQFXlxLFOLYKwKpfs";
 // Add service role key for bypassing RLS
@@ -95,6 +95,22 @@ serve(async (req) => {
       content: msg.message
     })) : [];
 
+    // First, save user message to database to ensure it's stored
+    const { error: userMsgError } = await supabase
+      .from('chat_messages')
+      .insert({
+        session_id: sessionId,
+        message: userMessage,
+        role: 'user',
+        is_voice: isVoice
+      });
+
+    if (userMsgError) {
+      console.error('Error saving user message:', userMsgError);
+    } else {
+      console.log('Successfully saved user message to database');
+    }
+
     // Prepare data for n8n
     const n8nPayload = {
       userMessage,
@@ -104,19 +120,19 @@ serve(async (req) => {
         summary: articleData.summary
       },
       chatHistory,
-      sessionId, // Add sessionId to the payload
-      isVoice    // Add voice flag to payload
+      sessionId,
+      isVoice
     };
 
-    // Construct webhook URL with session ID as query parameter
-    const webhookUrl = `${N8N_WEBHOOK_BASE_URL}?sessionId=${sessionId}`;
+    // Construct webhook URL (make sure we're using the updated URL)
+    const webhookUrl = `https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f?sessionId=${sessionId}`;
     console.log('Sending request to n8n webhook:', webhookUrl);
     
     let assistantMessage;
     let n8nResponseStatus = 0;
     
     try {
-      // Send request to n8n webhook with session ID included
+      // Send request to n8n webhook
       const n8nResponse = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -135,32 +151,31 @@ serve(async (req) => {
         // Use fallback response instead of failing
         assistantMessage = generateFallbackResponse(articleData, userMessage);
       } else {
-        const responseData = await n8nResponse.json();
-        assistantMessage = responseData.message || responseData.response || responseData.answer || 
-          "I'm not sure how to respond to that.";
-        console.log('Received valid response from n8n');
+        // Try to parse JSON response, fall back to text if not valid JSON
+        let responseText = await n8nResponse.text();
+        console.log(`n8n raw response: ${responseText.substring(0, 300)}...`);
+        
+        try {
+          // Try to parse as JSON
+          const responseData = JSON.parse(responseText);
+          assistantMessage = responseData.message || responseData.response || responseData.answer || 
+            "I'm not sure how to respond to that.";
+          console.log('Successfully parsed JSON response from n8n');
+        } catch (jsonError) {
+          console.error('Failed to parse JSON from n8n, using response as plain text');
+          // If not valid JSON but has content, use the text response directly
+          if (responseText && responseText.length > 5) {
+            assistantMessage = responseText;
+          } else {
+            assistantMessage = generateFallbackResponse(articleData, userMessage);
+          }
+        }
       }
     } catch (error) {
       console.error('Error communicating with n8n:', error);
       
       // Use fallback response for any network or other errors
       assistantMessage = generateFallbackResponse(articleData, userMessage);
-    }
-    
-    // Save user message to database
-    const { error: userMsgError } = await supabase
-      .from('chat_messages')
-      .insert({
-        session_id: sessionId,
-        message: userMessage,
-        role: 'user',
-        is_voice: isVoice
-      });
-
-    if (userMsgError) {
-      console.error('Error saving user message:', userMsgError);
-    } else {
-      console.log('Successfully saved user message to database');
     }
 
     // Save assistant message to database

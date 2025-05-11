@@ -100,6 +100,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_voice: boolean | null
           message: string
           role: string
           session_id: string
@@ -107,6 +108,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_voice?: boolean | null
           message: string
           role: string
           session_id: string
@@ -114,6 +116,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_voice?: boolean | null
           message?: string
           role?: string
           session_id?: string

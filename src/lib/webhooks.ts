@@ -6,7 +6,7 @@
 export async function sendLoginWebhook(userId: string): Promise<void> {
   try {
     // Construct the URL with the user ID as a query parameter
-    const webhookUrl = `https://ckproductspace.app.n8n.cloud/webhook/8fc953a0-0903-4303-854f-158eefeaa634?userId=${encodeURIComponent(userId)}`;
+    const webhookUrl = `https://ckproductspace.app.n8n.cloud/webhook/916b0eb7-0da0-4000-86c8-9654d930338f?userId=${encodeURIComponent(userId)}`;
     
     // Send the webhook request
     const response = await fetch(webhookUrl, {
