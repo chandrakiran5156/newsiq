@@ -100,7 +100,7 @@ export default function LandingPage() {
             </div>
             <div className="hidden md:block">
               <img 
-                src="/lovable-uploads/2cf273c4-1a34-4690-8407-e1fe77fa3d30.png" 
+                src="/lovable-uploads/f7985ed2-596c-443d-9b21-97209e898aed.png"
                 alt="NewsIQ Digital News Platform" 
                 className="rounded-lg shadow-xl animate-fade-in"
               />
