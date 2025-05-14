@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AuthProvider, useAuth } from "@/lib/supabase-auth";
+import { useState, createContext, useContext } from "react";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -25,9 +26,26 @@ import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
-// Protected route component
+// Create a context for guest mode
+type GuestModeContextType = {
+  isGuestMode: boolean;
+  setIsGuestMode: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const GuestModeContext = createContext<GuestModeContextType | undefined>(undefined);
+
+export const useGuestMode = () => {
+  const context = useContext(GuestModeContext);
+  if (!context) {
+    throw new Error("useGuestMode must be used within a GuestModeProvider");
+  }
+  return context;
+};
+
+// Modified protected route component that allows guest mode
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { isGuestMode } = useGuestMode();
 
   if (isLoading) {
     return (
@@ -37,7 +55,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Allow access if authenticated or in guest mode
+  if (!isAuthenticated && !isGuestMode) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -46,15 +65,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
+  const { isGuestMode } = useGuestMode();
 
   return (
     <Routes>
       {/* Public routes */}
       <Route path="/" element={
-        isAuthenticated ? <Navigate to="/home" /> : <LandingPage />
+        isAuthenticated || isGuestMode ? <Navigate to="/home" /> : <LandingPage />
       } />
       <Route path="/auth" element={
-        isAuthenticated ? <Navigate to="/home" /> : <Auth />
+        isAuthenticated || isGuestMode ? <Navigate to="/home" /> : <Auth />
       } />
       <Route path="/features" element={<Features />} />
       <Route path="/contact" element={<Contact />} />
@@ -120,20 +140,26 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [isGuestMode, setIsGuestMode] = useState(false);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <GuestModeContext.Provider value={{ isGuestMode, setIsGuestMode }}>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </AuthProvider>
+          </GuestModeContext.Provider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

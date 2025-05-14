@@ -1,16 +1,21 @@
+
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useAuth } from '@/lib/supabase-auth';
+import { toast } from "@/components/ui/use-toast";
+import { useGuestMode } from '@/App';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signIn, signUp, isAuthenticated, isLoading } = useAuth();
+  const { setIsGuestMode } = useGuestMode();
+  const navigate = useNavigate();
 
   // Get the current URL for redirect
   const currentOrigin = window.location.origin;
@@ -33,6 +38,15 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     // Pass the current origin as redirectTo
     await signIn('google', { redirectTo: `${currentOrigin}/home` });
+  };
+
+  const handleSkip = () => {
+    setIsGuestMode(true);
+    toast({
+      title: "Guest Mode Activated",
+      description: "You're browsing as a guest. Some features may be limited.",
+    });
+    navigate('/home');
   };
 
   return (
@@ -121,6 +135,15 @@ export default function Auth() {
                     </svg>
                     Google
                   </Button>
+
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full mt-2"
+                    onClick={handleSkip}
+                  >
+                    Skip login and continue as guest
+                  </Button>
                 </CardFooter>
               </form>
             </TabsContent>
@@ -192,6 +215,15 @@ export default function Auth() {
                       />
                     </svg>
                     Google
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full mt-2"
+                    onClick={handleSkip}
+                  >
+                    Skip signup and continue as guest
                   </Button>
                 </CardFooter>
               </form>
